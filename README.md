@@ -1,11 +1,12 @@
 # What is this?
 
-![finite element pentagon](pentagon_fe_flow.png)
-
 This is a collection of scripts aimed at implementing a framework 
 for doing simulations and analyzing summary statistics relating 
 to passive tracers in Poiseuille flow. I'm using the 
 FiPy finite element library to implement the essential tools.
+
+![finite element pentagon](pentagon_fe_flow.png)
+
 
 # Why do this?
 My previous project relating to this, "skewtools," 
