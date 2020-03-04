@@ -6,7 +6,12 @@ from fipy.tools import numerix
 import numpy as np
 from matplotlib import pyplot
 
-import cmocean  # just for colormap
+try:
+    import cmocean  # just for colormap
+    my_cm = cmocean.cm.ice
+except:
+    my_cm = pyplot.cm.Blues
+#
 
 # laplace(phi) = -2; phi = 0 on boundary
 # triangular domain
@@ -44,7 +49,7 @@ viewer = Viewer(vars=tphi, datamin=0., datamax=tphi.value.max()) # vis
 fig = pyplot.gcf()
 ax = fig.axes[0]
 
-ax.collections[0].set_facecolors(cmocean.cm.ice(9./2*tphi.value)) # for fun
+ax.collections[0].set_facecolors(my_cm(9./2*tphi.value)) # for fun
 ax.collections[0].set_edgecolors([0.8,0.8,0.8,0.1])
 
 # more blerg

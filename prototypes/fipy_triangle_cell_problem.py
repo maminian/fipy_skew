@@ -6,7 +6,14 @@ from fipy.tools import numerix
 import numpy as np
 from matplotlib import pyplot
 
-import cmocean  # just for colormap
+try:
+    import cmocean  # just for colormap
+    my_cm = cmocean.cm.ice
+    my_cm2 = cmocean.cm.curl
+except:
+    my_cm = pyplot.cm.Blues
+    my_cm2 = pyplot.cm.bwr
+#
 
 ##
 # CellVariable tools
@@ -80,7 +87,7 @@ viewer = Viewer(vars=flow, datamin=0., datamax=flow.value.max()) # vis
 fig = pyplot.gcf()
 ax = fig.axes[0]
 
-ax.collections[0].set_facecolors(cmocean.cm.ice(9./2*flow.value)) # for fun
+ax.collections[0].set_facecolors(my_cm(9./2*flow.value)) # for fun
 ax.collections[0].set_edgecolors([0.8,0.8,0.8,0.05])
 
 # more blerg
@@ -130,7 +137,7 @@ th_viewer = Viewer(vars=theta, datamin=-thrange, datamax=thrange)
 fig = pyplot.gcf()
 ax = fig.axes[0]
 
-ax.collections[0].set_facecolors(cmocean.cm.curl((theta.value -thmin)/(thmax-thmin)))
+ax.collections[0].set_facecolors(my_cm2((theta.value -thmin)/(thmax-thmin)))
 ax.collections[0].set_edgecolors(None)
 
 fig.axes[1].remove()

@@ -4,9 +4,15 @@ import gen_mesh
 import numpy as np
 from matplotlib import pyplot
 
-import cmocean
+try:
+    import cmocean
+    my_cm = cmocean.cm.haline
+except:
+    my_cm = pyplot.cm.viridis
+#
 
 def colorize(arr):
+    # helper function to replace fipy's colormap; map data to [0,1].
     return (arr - arr.min())/(arr.max() - arr.min())
 
 s = 5
@@ -31,7 +37,7 @@ viewer = fipy.Viewer(vars=flow, datamin=0., datamax=flow.value.max()) # vis
 fig = pyplot.gcf()
 ax = fig.axes[0]
 
-ax.collections[0].set_facecolors(cmocean.cm.haline(colorize(flow.value))) # for fun
+ax.collections[0].set_facecolors(my_cm(colorize(flow.value))) # for fun
 ax.collections[0].set_edgecolors(None)
 
 # more blerg
@@ -44,3 +50,5 @@ fig.set_figwidth(6)
 fig.tight_layout()
 
 ####
+
+fig.savefig('pentagon_fe_flow.png', dpi=120, bbox_inches='tight')
