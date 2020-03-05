@@ -51,4 +51,4 @@ fig.tight_layout()
 
 ####
 
-fig.savefig('pentagon_fe_flow.png', dpi=120, bbox_inches='tight')
+fig.savefig('pentagon_fe_flow.png', dpi=80, bbox_inches='tight')
