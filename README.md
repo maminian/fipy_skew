@@ -5,7 +5,7 @@ for doing simulations and analyzing summary statistics relating
 to passive tracers in Poiseuille flow. I'm using the 
 FiPy finite element library to implement the essential tools.
 
-![finite element pentagon](pentagon_fe_flow.png)
+![finite element moments in pentagon](pentagon_moment_solutions.png)
 
 
 # Why do this?
