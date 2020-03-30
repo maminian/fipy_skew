@@ -44,7 +44,8 @@ def colorize(arr):
 s = 5
 pts = np.array([ [np.cos(th), np.sin(th)] for th in 2*np.pi/s*np.arange(s) ])
 
-cellSize = 0.08
+oneish = np.sqrt(10)/3. - 0.054  # something vaguely irrational
+cellSize = 0.04*oneish
 
 mesh = gen_mesh.gen_mesh(pts,cellSize)
 
@@ -123,15 +124,23 @@ g2range = max(abs(g2min), abs(g2max))
 fig,ax = pyplot.subplots(1,3, figsize=(15,5), sharex=True, sharey=True)
 
 utils.vis_fe_2d(flow, antialiased=True, cmap=my_cm, ax=ax[0], cbar=False)
-utils.vis_fe_2d(theta, antialiased=True, cmap=my_cm2, ax=ax[1], cbar=False)
-utils.vis_fe_2d(g2, antialiased=True, cmap=my_cm3, ax=ax[2], cbar=False)
+utils.vis_fe_2d(theta, antialiased=True, cmap=my_cm2, ax=ax[1], cbar=False, cstyle='divergent')
+utils.vis_fe_2d(g2, antialiased=True, cmap=my_cm3, ax=ax[2], cbar=False, cstyle='divergent')
 
 
 #
-if False:
+
+if True:
     cellX,cellY = mesh.cellCenters.value
-    ax[1].tricontour(cellX, cellY, theta.value, 11, colors='k')
-    ax[2].tricontour(cellX, cellY, g2.value, 11, colors='k')
+    ax[0].tricontour(cellX, cellY, flow.value, 11, colors='k')
+    
+    thmin,thmax = theta.value.min(), theta.value.max()
+    thbnd = max(abs(thmin), abs(thmax))
+    ax[1].tricontour(cellX, cellY, theta.value, np.linspace(-thbnd,thbnd,15), colors='k')
+    
+    g2min,g2max = g2.value.min(), g2.value.max()
+    g2bnd = max(abs(g2min), abs(g2max))
+    ax[2].tricontour(cellX, cellY, g2.value, np.linspace(-g2bnd,g2bnd,15), colors='k')
 
 #
 ax[0].axis('square')

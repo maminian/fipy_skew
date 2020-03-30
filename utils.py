@@ -50,6 +50,20 @@ def vis_fe_2d(fipy_cell_var, cbar=True, **kwargs):
         kwargs:
             ax : if provided, the plotting will be done in the provided
                 matplotlib axis object.
+                
+            cmap : if provided, the provided colormap object will be used. 
+                Care should be taken for visualization approach (i.e., 
+                linear scaling vs divergent colormaps); see 'cstyle' kwarg below.
+                Default: pyplot.cm.viridis
+                
+            cstyle : if provided, the vmin and vmax values for tripcolor()
+                will be defined differently (default: 'linear')
+                    'linear' : vmin=fipy_cell_var.value.min(); similar with vmax.
+                        This is the default behavior for most plotting commands.
+                    'divergent' : vmin and vmax are defined such that the center 
+                        value of the colormap corresponds to the value 0 (zero). 
+                        This is useful when the context of where "zero" is matters.
+            
             The remainder of kwargs are passed on to tripcolor's named
             and keyword arguments. Note the internal call to
             tripcolor() will look like:
@@ -79,6 +93,12 @@ def vis_fe_2d(fipy_cell_var, cbar=True, **kwargs):
     else:
         mycm = pyplot.cm.viridis
     #
+    
+    if 'cstyle' in kwargs.keys():
+        cstyle = kwargs.pop('cstyle')
+    else:
+        cstyle = 'linear'
+    #
 
     # create matplotlib triangulation object.
     cell_to_face = fipy_cell_var.mesh.cellFaceIDs       # 3 by ncells
@@ -104,12 +124,31 @@ def vis_fe_2d(fipy_cell_var, cbar=True, **kwargs):
 
     triang = tri.Triangulation(xx, yy, idx)
 
+    fvals = fipy_cell_var.value
+    if cstyle.lower()=='divergent':
+        vbnd = max( abs(np.nanmin( fvals )), abs(np.nanmax( fvals )))
+        # handle the case of vbnd==0; bad stuff happens later.
+        if vbnd==0.: 
+            vbnd = 0.1
+        vminv = -vbnd
+        vmaxv = vbnd
+        
+    elif cstyle.lower()=='linear':
+        vminv = np.nanmin( fvals )
+        vmaxv = np.nanmax( fvals )
+    else:
+        # print warning; default to lienar.
+        print('Unrecognized cstyle %s; defaulting to linear colormap assumption.'%cstyle)
+        vminv = np.nanmin( fvals )
+        vmaxv = np.nanmax( fvals )
+    #
+    
     triobj = ax.tripcolor(
         triang,
-        facecolors = fipy_cell_var.value,
+        facecolors = fvals,
         cmap = mycm,
-        vmin = np.nanmin( fipy_cell_var.value ),     # doesn't handle NaN well
-        vmax = np.nanmax( fipy_cell_var.value ),
+        vmin = vminv,     # doesn't handle NaN well
+        vmax = vmaxv,
         **kwargs
     )
 
