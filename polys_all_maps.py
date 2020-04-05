@@ -12,16 +12,17 @@ import utils
 
 
 import cmocean  # just for colormap
-my_cm = cmocean.cm.haline
-my_cm2 = cmocean.cm.curl
-my_cm3 = pyplot.cm.PRGn
+import colorcet
+my_cm = colorcet.cm.kbc
+my_cm2 = colorcet.cm.gwv
+my_cm3 = colorcet.cm.cwr
 
 
 ##
 # CellVariable tools
 #
 def c_integrate(cvar):
-    # is there a higher-order version of this? 
+    # is there a higher-order version of this?
     # does it make sense to do anything more sophisticated?
     return (cvar.mesh.cellVolumes * cvar.value).sum()
 #
@@ -123,8 +124,9 @@ g2range = max(abs(g2min), abs(g2max))
 
 fig,ax = pyplot.subplots(1,3, figsize=(15,5), sharex=True, sharey=True)
 
+
 utils.vis_fe_2d(flow, antialiased=True, cmap=my_cm, ax=ax[0], cbar=False)
-utils.vis_fe_2d(theta, antialiased=True, cmap=my_cm2, ax=ax[1], cbar=False, cstyle='divergent')
+utils.vis_fe_2d(mz_theta, antialiased=True, cmap=my_cm2, ax=ax[1], cbar=False, cstyle='divergent')
 utils.vis_fe_2d(g2, antialiased=True, cmap=my_cm3, ax=ax[2], cbar=False, cstyle='divergent')
 
 
@@ -133,11 +135,11 @@ utils.vis_fe_2d(g2, antialiased=True, cmap=my_cm3, ax=ax[2], cbar=False, cstyle=
 if True:
     cellX,cellY = mesh.cellCenters.value
     ax[0].tricontour(cellX, cellY, flow.value, 11, colors='k')
-    
-    thmin,thmax = theta.value.min(), theta.value.max()
+
+    thmin,thmax = mz_theta.value.min(), mz_theta.value.max()
     thbnd = max(abs(thmin), abs(thmax))
-    ax[1].tricontour(cellX, cellY, theta.value, np.linspace(-thbnd,thbnd,15), colors='k')
-    
+    ax[1].tricontour(cellX, cellY, mz_theta.value, np.linspace(-thbnd,thbnd,15), colors='k')
+
     g2min,g2max = g2.value.min(), g2.value.max()
     g2bnd = max(abs(g2min), abs(g2max))
     ax[2].tricontour(cellX, cellY, g2.value, np.linspace(-g2bnd,g2bnd,15), colors='k')
@@ -149,4 +151,4 @@ ax[2].axis('square')
 fig.tight_layout()
 fig.show()
 
-fig.savefig('spatial_solutions.png', dpi=120, bbox_inches='tight')
+#fig.savefig('spatial_solutions.png', dpi=120, bbox_inches='tight')
