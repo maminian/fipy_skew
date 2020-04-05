@@ -22,6 +22,10 @@ class fe_flow:
         self.calculate_coeffs()
         if verb>0: print('done.')
 
+        if verb>0: print('Precalculating cell neighborhoods... ', end='')
+        self.calculate_cell_nbrs()
+        if verb>0: print('done.')
+
         if verb>0: print('\nfe_flow object ready to use for simulation.')
         return
     #
@@ -55,7 +59,7 @@ class fe_flow:
         eq.solve(var=lab_flow)
 
         self.flow_lab = lab_flow    #yeah i know
-        
+
         self.flow_average = self.c_average(self.flow_lab)
 
         self.flow = self.flow_lab - self.flow_average
@@ -82,7 +86,24 @@ class fe_flow:
         return
     #
 
-    def get_flow(self, particles, exterior=0.):
+    def calculate_cell_nbrs(self):
+        '''
+        Precalculates approximate ordering of neighbor cells for every finite element cell.
+        Should vastly improve lookup time for flows for particles if prior
+        cell position is saved, since motion is continuous in time.
+        '''
+        from scipy import spatial
+        import numpy as np
+        D = spatial.distance_matrix(self.mesh.cellCenters.value.T, self.mesh.cellCenters.value.T)
+        nbrs = np.zeros(D.shape, dtype=np.int)
+
+        for j,row in enumerate(D):
+            nbrs[j] = np.argsort(row)
+        self.cell_nbrs = nbrs
+        return
+    #
+
+    def get_flow(self, particles, exterior=0., pointers=None):
         '''
         get flow values for all particles in tandem.
         particles outside the domain are prescribed a flow
@@ -105,7 +126,12 @@ class fe_flow:
 
         # identify the cell every particle lies in. If it does not lie in
         # any cells (mask==False), it's assigned to the default value "exterior".
-        mask,idx = utils.locate_cell(particles, self.mesh, c_mats = self.c_mats)
+        if type(pointers) == type(None):    #ugh
+            mask,idx = utils.locate_cell(particles, self.mesh, c_mats = self.c_mats)
+        else:
+            #mask,idx = utils.locate_cell(particles, self.mesh, c_mats = self.c_mats)
+            mask,idx = self.locate_cell2(particles, pointers)
+        #
 
         flows = exterior*np.ones(n)
         flows[mask] = self.flow.value[idx[mask]]
@@ -123,5 +149,88 @@ class fe_flow:
         # There's also a built-in cvar.cellVolumeAverage
         # This can be done more efficiently, but this won't be used often.
         return self.c_integrate(cvar)/(cvar.mesh.cellVolumes.sum())
+    #
+
+    ####
+
+
+    def locate_cell2(self, particles, pointers):
+        '''
+        Given a gmesh object (collection of vertices, faces, cells),
+        generate a collection of pointers indicating which cell each
+        point lies in.
+
+        This version is distinguished by
+            (a) primary loop is over points, not cells;
+            (b) requires a list of indexes of previous cells each
+                particle was. Used in conjunction with precomputed
+                cell_nbrs list, lookups should be much faster.
+            (c) utilizes previously calculated quantities in fe_flow() class.
+
+        Input:
+            particles: numpy array of shape (2,) or (n,2); either a singleton
+                or a collection of points in 2D organized by row.
+            pointers: numpy array of shape (n,) of pointers to the
+                cells every particle previously lied.
+
+        Outputs:
+            mask: boolean array shape (n,) indicating whether the points
+                lie in *any* of the triangles. You should use this as a
+                preprocessing step to handle exceptions, etc.
+            idx: Either an integer, or a numpy integer array shape (n,)
+                indicating which cell one or more points lie within.
+                Note that pointers for which mask==False are nonsense
+                (the mask indicates they are outside the array, so not handled.)
+
+        '''
+        import numpy as np
+        import fipy
+        import utils
+
+        pshape = np.shape(particles)
+        if pshape==(2,):
+            singleton = True
+            n=1
+            pts = [points]
+        elif len(pshape)==2 and pshape[1]==2:
+            singleton = False
+            n = pshape[0]
+            pts = particles
+        else:
+            raise Exception('Cannot handle input particles of shape ', np.shape(particles))
+        #
+
+        ncell = self.mesh.cellFaceIDs.shape[1]
+        idx = np.array(pointers)
+        interior_mask = np.ones(len(pointers), dtype=bool)
+
+        search_stats = np.zeros(len(pointers), dtype=int)
+
+        # LOOP OVER PARTICLES
+        for i,o,particle in zip( range(len(particles)), pointers, particles ):
+            # get which points lie in the current cell
+            flag = False
+            for ii,j in enumerate( self.cell_nbrs[o] ):
+                flag = utils._in_Carr(particle, self.c_mats[j])
+                if flag:    # is this the correct cell?
+                    idx[i] = j
+                    # print(ii)
+                    break
+            #
+            if not flag:
+                # couldn't find a cell! Must be in the exterior.
+                interior_mask[i] = False
+            #
+            search_stats[i] = ii
+        # end for
+
+        stats = (np.mean(search_stats), np.quantile(search_stats,0.05), np.quantile(search_stats,0.50), np.quantile(search_stats,0.95))
+        print('Search stats: mean: %.1f \t 5pct: %.1f 50pct: %.1f 95pct: %.1f'%stats)
+
+        # done - return a scalar if a singleton was fed; else the idx array.
+        if singleton:
+            return interior_mask[0],idx[0]
+        else:
+            return interior_mask,idx
     #
 #
