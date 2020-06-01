@@ -69,21 +69,114 @@ class fe_flow:
     def calculate_coeffs(self):
         '''
         Given a mesh, precompute a collection of (3,3) arrays needed to
-        test whether a point lies in the interior of the associated triangle.
+        test whether a point lies in the interior of the associated triangle, 
+        and to help in calculating intersections.
         '''
         import numpy as np
         import utils
 
-        vci = [np.unique(self.mesh.faceVertexIDs[:,ci]) for ci in self.mesh.cellFaceIDs.T]
-        X,Y = self.mesh.vertexCoords[:,vci]
         #X = mg.vertexCoords[0,vci]
         #Y = mg.vertexCoords[1,vci]
 
-        # TODO - repackage everything in a nicer way that I'm not constantly
-        # doing transposes, elementwise operations, etc.
-        self.c_mats = np.array([utils._get_cell_coeffs(np.vstack([xi,yi]).T) for xi,yi in zip(X,Y)])
+#        self.c_mats = np.array([utils._get_cell_coeffs(np.vstack([xi,yi]).T) for xi,yi in zip(X,Y)])
+        self.c_mats = np.array([self.cellFaceParams(i) for i in range(self.mesh.cellCenters.value.shape[1])])
 
         return
+    #
+    
+    def hp_function(self,pt,faceID,cellID):
+        '''
+        Calculate the value of the linear function determining 
+        which side of a face a point lies on. This does not use 
+        precomputed coefficients, and requires an explicit 
+        face (line segment) pointer and cell pointer. 
+        
+        It's assumed the faceID is one of the faces of the corresponding 
+        cellID.
+        
+        The linear function is assumed 0 along the face, 
+        and 1 at the indicated cell center.
+        
+        Outputs: scalar value of the respective half-plane function.
+        '''
+        import numpy as np
+        cc = self.mesh.cellCenters.value[:,cellID] # cell center
+        fc = self.mesh.faceCenters.value[:,faceID] # face center
+        normal = self.mesh.faceNormals.data[:,faceID] # face normal
+        A = np.array([[cc[0],cc[1],1.],[fc[0],fc[1],1],[-normal[1],normal[0],0]])
+        coeff = np.linalg.solve(A,np.array([1.,0,0]))
+
+        return coeff[0]*pt[0] + coeff[1]*pt[1] + coeff[2]
+    #
+    
+    def cellFaceParams(self,cellID):
+        '''
+        Computes the parameter matrix for the linear functions 
+        corresponding to the faces of the input cellID. 
+        
+        Ordering of the faces has the same order as indicated 
+        in the mesh given by self.mesh.cellFaceIDs.
+        
+        Outputs: params; numpy array of shape (3,3)  Each row 
+            corresponds to the parameters of the linear function 
+            associated with the face.
+        '''
+        import numpy as np
+        
+        cc = self.mesh.cellCenters.value[:,cellID] # cell center
+        faceIDs = self.mesh.cellFaceIDs.data[:,cellID]
+        params = np.zeros((3,3), dtype=float)
+        
+        for i,fi in enumerate(faceIDs):
+            fc = self.mesh.faceCenters.value[:,fi]
+            normal = self.mesh.faceNormals.data[:,fi]
+            mat = np.array([[1.,cc[0],cc[1]], [1,fc[0],fc[1]], [0,-normal[1],normal[0]]])
+            parami = np.linalg.solve(mat, [1.,0,0])
+            params[i] = parami
+        #
+        return params
+    #
+    
+    def _solve_s(param, x0, x1):
+        '''
+        Solve for the parameterized time (fraction of length along a trajectory)
+        for which a line from x0 to x1 intersects the linear 
+        function defined by input param.
+        
+        Inputs:
+            param : list or array length 3 of floats for the function 
+                param[0] + param[1]*x + param[2]*y
+            x0 : list or array length 2 of floats of initial position
+            x1 : list or array length 2 of floats of final position
+        Outputs:
+            s : scalar indicating parameterized time of intersection.
+                A value outside [0,1] indicates a non-physical intersection 
+                for the trajectory from x0 to x1.
+        '''
+        numer = param[1]*x0[0] + param[2]*x0[1] + param[0]
+        denom = param[1]*(x0[0]-x1[0]) + param[2]*(x0[1]-x1[1])
+        return numer/denom
+    #
+    
+    def argintersection(self,cellID,x0,x1):
+        '''
+        returns times of intersections for the linear trajectory from x0 to x1, 
+        for the lines associated to the faces of cell defined by cellID.
+        
+        Typically we look for smallest nonnegative t in this interval 
+        (first "real" intersection).
+        
+        Inputs:
+            cellID : integer pointer indicating the cell of interest
+            x0 : list or array length 2 of floats of initial position
+            x1 : list or array length 2 of floats of final position
+            
+        Outputs:
+            esses : numpy array shape (3,) of intersection times.
+        '''
+        import numpy as np
+        A = self.cellFaceParams(cellID)
+        return np.array([self._solve_s(ai,x0,x1) for ai in A])
     #
 
     def calculate_cell_nbrs(self):
