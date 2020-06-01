@@ -211,7 +211,7 @@ def locate_cell(points, gmesh, **kwargs):
     if pshape==(2,):
         singleton = True
         n=1
-        pts = [points]
+        pts = np.array([points])
     elif len(pshape)==2 and pshape[1]==2:
         singleton = False
         n = pshape[0]
@@ -271,7 +271,7 @@ def locate_cell(points, gmesh, **kwargs):
         #
         
         # get the active set of points
-        pt_subset = points[active_pt_mask]
+        pt_subset = pts[active_pt_mask]
         pt_subset_ptr = np.where(active_pt_mask)[0]
 
         # get which points lie in the current cell

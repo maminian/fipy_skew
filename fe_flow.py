@@ -137,7 +137,7 @@ class fe_flow:
         return params
     #
     
-    def _solve_s(param, x0, x1):
+    def _solve_s(self,param, x0, x1):
         '''
         Solve for the parameterized time (fraction of length along a trajectory)
         for which a line from x0 to x1 intersects the linear 
