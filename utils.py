@@ -134,13 +134,16 @@ def vis_fe_2d(fipy_cell_var, cbar=True, **kwargs):
         vmaxv = vbnd
         
     elif cstyle.lower()=='linear':
-        vminv = np.nanmin( fvals )
-        vmaxv = np.nanmax( fvals )
+#        vminv = np.nanmin( fvals )
+#        vmaxv = np.nanmax( fvals )
+        # try something more robust to possible outliers.
+        vminv,vmaxv = np.nanquantile( fvals, [0.025, 0.975])
     else:
         # print warning; default to lienar.
         print('Unrecognized cstyle %s; defaulting to linear colormap assumption.'%cstyle)
-        vminv = np.nanmin( fvals )
-        vmaxv = np.nanmax( fvals )
+#        vminv = np.nanmin( fvals )
+#        vmaxv = np.nanmax( fvals )
+        vminv,vmaxv = np.nanquantile( fvals, [0.025, 0.975])
     #
     
     triobj = ax.tripcolor(
