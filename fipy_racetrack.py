@@ -1,3 +1,7 @@
+# Demo showing off a numerical solution 
+# of the flow in a racetrack (smooth boundary)
+#
+
 import fipy
 import gen_mesh
 import utils

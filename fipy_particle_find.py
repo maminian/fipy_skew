@@ -1,3 +1,9 @@
+# Demo showing of a few things:
+# 
+# 1. calculation of a flow in irregular domain
+# 2. given a particle, find which element it's contained in.
+#
+
 import fipy
 import gen_mesh
 import utils

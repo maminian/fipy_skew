@@ -1,3 +1,11 @@
+# Demo showing off a few things...
+#
+# 1. Irregular domain construction and solution of flow
+# 2. Calculation of **cell** boundary crossings of trajectories
+# 3. Applying reflecting boundary conditions.
+#
+
+
 import numpy as np
 import fe_flow
 
@@ -8,6 +16,15 @@ import utils
 #import cmocean  # colormap
 
 import colorcet
+
+import os
+
+SAVEFRAMES = False
+FRAMESDIR = 'frames'
+if not os.path.exists(FRAMESDIR):
+    os.mkdir(FRAMESDIR)
+
+TEMPLATE_OUTPUT = os.path.join(FRAMESDIR, 'reflections_%s.png')
 ##
 
 # prescribe boundary - here, a pentagon.
@@ -20,7 +37,7 @@ bdry = np.array(bdry)
 
 fef = fe_flow.fe_flow(bdry, cell_size=0.1, verbosity=1)
 
-fig,ax = utils.vis_fe_2d(fef.flow, cbar=False)
+fig,ax = utils.vis_fe_2d(fef.flow, cbar=False, cmap=colorcet.cm.bmw)
 fig.set_figwidth(8)
 fig.set_figheight(8)
 
@@ -113,8 +130,9 @@ while t<1:
     #
 
 
-    
-    ax.plot([x0[0], x1i[0]], [x0[1],x1i[1]], c=colorcet.cm.colorwheel(((jj*8)%256)/256.), marker='.', markersize=8, linewidth=2)
+    #pathcolor = colorcet.cm.colorwheel(((jj*8)%256)/256.)
+    pathcolor = pyplot.cm.twilight(((jj*8)%256)/256.)
+    ax.plot([x0[0], x1i[0]], [x0[1],x1i[1]], c=pathcolor, marker='.', markersize=8, linewidth=2)
 #    ax.text(x1i[0],x1i[1], r't=%.3f'%t, fontsize=11, ha='left', va='top')
     
     print(x0,x1i,x1,t)
@@ -146,8 +164,8 @@ while t<1:
         txt.remove()
     txt = ax.text(x1i[0],x1i[1], r'$t=%.3f$'%t, c='w', fontsize=12)
     
-
-    fig.savefig('frames2/reflections_%s.png'%str(jj).zfill(4), dpi=120, bbox_inches='tight')
+    if SAVEFRAMES:
+        fig.savefig(TEMPLATE_OUTPUT%str(jj).zfill(4), dpi=120, bbox_inches='tight')
     pyplot.pause(0.1)
     jj += 1
 #

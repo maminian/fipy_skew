@@ -32,6 +32,8 @@ def gen_mesh(pts,cellSize):
     idx += 1
     gmsh_arg += 'Plane Surface(%i) = {%i};\n'%(idx, idx-1)
 
+    # Call fipy to construct the mesh with the given 
+    # input parameters (a plaintext file we constructed procedurally)
     mesh = fipy.Gmsh2D(gmsh_arg)
 
     return mesh

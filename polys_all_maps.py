@@ -1,3 +1,11 @@
+# Demo showing how one can feed 
+# mesh-valued functions from fipy into one 
+# another to successively solve the 
+# moment equations
+# 
+# (ex: solving the cell problem Laplace(theta) = u, Neumann boundaries)
+#
+
 import fipy
 
 from fipy import CellVariable, Gmsh2D, TransientTerm, DiffusionTerm

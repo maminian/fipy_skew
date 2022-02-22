@@ -1,3 +1,9 @@
+# Demo showing off solution of flow problem:
+#
+# Laplacian(u) = -2
+# u on the boundary is zero.
+#
+
 import fipy
 import gen_mesh
 
