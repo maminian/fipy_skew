@@ -52,3 +52,5 @@ numerical simulation using the finite element flow solution.
 # Getting started
 * Study and try running `fipy_polys.py`. This is an example where I've parameterized the boundary of the cross-section by a collection of points. The meshing is handled by the module gen_mesh, and this is passed on to fipy to solve the Poisson problem for the flow, which is visualized using fipy's default Visualizer() class.
 
+# test
+test
