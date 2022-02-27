@@ -44,6 +44,39 @@ def compute_stats(arr_1d):
     return st.mean,st.variance,st.skewness,median
 #
 
+def neighbor_order(points,n_neighbors=12):
+    '''
+    gives an order for which the points are ordered based on distance
+    to neighbors.
+    
+    uses sklearn.
+    
+    Super unstable.
+    Actually just junk, really.
+    '''
+    from sklearn import neighbors
+    
+    points = points - np.mean(points, axis=0)
+    
+    nn = neighbors.NearestNeighbors(n_neighbors=n_neighbors, metric='euclidean')
+    nn.fit(points)
+    avail = list(range(len(points)))
+    nbrs = nn.kneighbors()[1]
+    nbrs = {i:nbrs[i] for i in range(len(nbrs))}
+    avail.remove(0)
+    o = [0]
+    kk=0
+    while len(avail)>1:
+        nb = nbrs[kk]
+        for ii in nb:
+            if ii in avail:
+                avail.remove(ii)
+                o.append(ii)
+                kk = ii
+    #
+    return o
+#
+
 def anticlockwise_order(points):
     '''
     returns the integer ordering of a collection of
