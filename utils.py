@@ -29,6 +29,18 @@ def pad_times(times, dtmax):
     return np.array(times_internal), np.array(save_time)
 #
 
+def smooth_boundary(arr_1d, nsteps=10, gamma=0.0):
+    '''
+    does a few steps of the smoothing procedure x[i] = (1-gamma)x[i] + gamma(x[i-1]+x[i+1])/2
+    '''
+    x = np.array(arr_1d)
+    for k in range(nsteps):
+        y = np.array(x)
+        for i in range(len(arr_1d)):
+            x[i] = (1-gamma)*y[i] + gamma*(y[(i+1)%len(arr_1d)] + y[(i-1)%len(arr_1d)])/2
+    return x
+#
+
 def compute_stats(arr_1d):
     '''
     Calculates summary statistics of a one-dimensional array.
