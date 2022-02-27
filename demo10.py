@@ -9,8 +9,8 @@ import utils
 
 from PIL import Image
 
-#with Image.open('duck.png') as f:
-with Image.open('rock.png') as f:
+with Image.open('wombat.png') as f:
+#with Image.open('rock.png') as f:
     img = np.asarray(f)
 
 #img = img[::-1,:,0].T
@@ -30,7 +30,7 @@ D = metrics.pairwise_distances(coords)
 keeps = np.zeros(len(coords), dtype=bool)
 keeps[0] = True
 for i in range(1,len(coords)):
-    if not any(np.logical_and(D[i][keeps]>0, D[i][keeps]<5)):
+    if not any(np.logical_and(D[i][keeps]>0, D[i][keeps]<10)):
         keeps[i] = True
 #
 coords = coords[keeps]
@@ -43,7 +43,7 @@ if __name__ == "__main__":
     fig,ax = pyplot.subplots(1,1)
     ax.imshow(img)
     
-    ax.plot(coords[:,0], coords[:,1], c='k', lw=3)
+    ax.scatter(coords[:,0], coords[:,1], c='k')
     
     fig.show()
     pyplot.ion()

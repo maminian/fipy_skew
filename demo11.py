@@ -16,13 +16,15 @@ import os
 
 from scipy import stats
 
+pyplot.style.use('dark_background')
+
 ANIMATE = False
 SAVEFRAMES = True
 FRAMESDIR = 'frames_demo11'
 if not os.path.exists(FRAMESDIR):
     os.mkdir(FRAMESDIR)
 
-N = 10000    # total particles
+N = 1000    # total particles
 Pe = 1e4    # Peclet
 dtmax = 1e-2
 #times = np.linspace(0,1,100)    # sample times
@@ -42,15 +44,15 @@ TEMPLATE_OUTPUT = os.path.join(FRAMESDIR, 'frame_%s.png')
 
 #############################
 
-import demo10
-bdry = demo10.coords
+import demo09 as myshape
+bdry = myshape.coords
 bdry = bdry - np.mean(bdry, axis=0)
 bdry = bdry / np.std(bdry, axis=0)
 bdry = bdry*2
 
 #############################
 
-fef = fe_flow.fe_flow(bdry, cell_size=0.5, verbosity=1)
+fef = fe_flow.fe_flow(bdry, cell_size=0.2, verbosity=1)
 exterior_faces = np.where( fef.mesh.exteriorFaces.value )[0]
 
 
@@ -228,7 +230,7 @@ for i in range(1,len(times_internal)):
         ax_p.axis('equal')
         
         ax_p.text( 0.05,0.95,r"$t=%.4e$"%times_internal[i], transform=ax_p.transAxes, ha='left', va='top')
-        fig_p.savefig(TEMPLATE_OUTPUT%jj)
+        fig_p.savefig(TEMPLATE_OUTPUT % str(jj).zfill(5))
     if ANIMATE and save_times[i]:
         # TODO: doesn't work
         fig_p.canvas.draw()
@@ -255,5 +257,6 @@ ax[0].set_xlabel('time')
 ax[0].set_ylabel('Sk')
 
 fig.show()
+fig.savefig(os.path.join(FRAMESDIR, 'diagram.png'))
 pyplot.ion()
 
