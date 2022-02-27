@@ -18,15 +18,15 @@ from scipy import stats
 
 ANIMATE = False
 SAVEFRAMES = True
-FRAMESDIR = 'frames_demo10'
+FRAMESDIR = 'frames_demo11'
 if not os.path.exists(FRAMESDIR):
     os.mkdir(FRAMESDIR)
 
-N = 1000    # total particles
+N = 10000    # total particles
 Pe = 1e4    # Peclet
 dtmax = 1e-2
 #times = np.linspace(0,1,100)    # sample times
-times = 10.**np.linspace(-8,-1,21)
+times = 10.**np.linspace(-8,1,81)
 times = np.concatenate([np.array([0]), times])
 
 fig_p,ax_p = pyplot.subplots(1,1, figsize=(8,6), constrained_layout=True)
@@ -220,7 +220,7 @@ for i in range(1,len(times_internal)):
         ax_p.cla()
 
 #        ax_p.scatter(X[:,1], X[:,2], c='k', s=4)
-        ax_p.scatter(X[:,1], X[:,2], c=mask_to_vis, s=4)
+        ax_p.scatter(X[:,1], X[:,2], c=X[:,0], s=4)
         utils.vis_fe_mesh_2d(fef.flow, ax=ax_p, c='#999', linewidth=0.5)
         
         ax_p.set_xlim([bdry[:,0].min()-0.5, bdry[:,0].max()+0.5])

@@ -9,7 +9,8 @@ import utils
 
 from PIL import Image
 
-with Image.open('duck.png') as f:
+#with Image.open('duck.png') as f:
+with Image.open('rock.png') as f:
     img = np.asarray(f)
 
 #img = img[::-1,:,0].T
@@ -29,14 +30,12 @@ D = metrics.pairwise_distances(coords)
 keeps = np.zeros(len(coords), dtype=bool)
 keeps[0] = True
 for i in range(1,len(coords)):
-    if not any(np.logical_and(D[i][keeps]>0, D[i][keeps]<10)):
+    if not any(np.logical_and(D[i][keeps]>0, D[i][keeps]<5)):
         keeps[i] = True
 #
 coords = coords[keeps]
-o = utils.anticlockwise_order(coords)
-coords = coords[o]
-o = utils.neighbor_order(coords,10)
-coords = coords[o]
+coords = coords[ utils.anticlockwise_order(coords) ]
+coords = utils.smooth_boundary(coords)
 
 if __name__ == "__main__":
     from matplotlib import pyplot
