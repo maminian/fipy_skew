@@ -1,4 +1,48 @@
 # wow
+import numpy as np
+from scipy import stats
+
+
+def pad_times(times, dtmax):
+    '''
+    Given 1d array times and dtmax, constructs two new 
+    arrays which treat "times" as checkpoints with internal 
+    timesteps which respect the maximum timestep.
+    
+    Inputs:
+        times : 1d array
+        dtmax : positive scalar
+    Outputs:
+        times_internal : 1d array
+        save_time : 1d boolean (if True, we'd like to record the solution at this point)
+    '''
+    t=times[0]
+    times_internal = [t]
+    save_time = [True]
+    for i in range(1,len(times)):
+        while (times[i]-t)>dtmax:
+            t += dtmax
+            times_internal.append(t)
+            save_time.append(False)
+        times_internal.append(times[i])
+        save_time.append(True)
+    return np.array(times_internal), np.array(save_time)
+#
+
+def compute_stats(arr_1d):
+    '''
+    Calculates summary statistics of a one-dimensional array.
+    
+    Inputs:
+        arr_1d: expected a one-dimensional object; list; numpy array, etc.
+    Outputs:
+        mean,var,skew,median: scalar statistics computed by scipy.stats.describe and np.median
+    '''
+    st = stats.describe(arr_1d)
+    median = np.median(arr_1d)
+    
+    return st.mean,st.variance,st.skewness,median
+#
 
 def anticlockwise_order(points):
     '''
@@ -159,6 +203,57 @@ def vis_fe_2d(fipy_cell_var, cbar=True, **kwargs):
         fig.colorbar(triobj)
     #
 
+    # the end
+    if flag_ax:
+        return fig,ax
+    else:
+        return
+    #
+#
+
+def vis_fe_mesh_2d(fipy_cell_var, ax=None, **kwargs):
+    '''
+    Invokes pyplot.triplot to draw the grid mesh only.
+    
+    kwargs passed to pyplot.triplot directly.
+    '''
+    import numpy as np
+    from matplotlib import tri,pyplot
+    
+    if ax is None:
+        fig,ax = pyplot.subplots(1,1)
+        flag_ax=True
+    else:
+        flag_ax=False
+    
+    # create matplotlib triangulation object.
+    cell_to_face = fipy_cell_var.mesh.cellFaceIDs       # 3 by ncells
+    face_to_vertex = fipy_cell_var.mesh.faceVertexIDs   # 2 by nedges
+    vertex_coords = fipy_cell_var.mesh.vertexCoords     # 2 by nvertex
+
+    # input looks like x coords, y coords, integer triples for triangle vertex pointers.
+    # however, points need to be in anticlockwise order.
+    xx,yy = vertex_coords
+
+    # don't understand exactly what face_to_vertex is doing;
+    # this implementation will work but it's not optimal.
+#    idx_pre = face_to_vertex[:,cell_to_face.T]
+    idx_pre = [ np.unique(face_to_vertex[:,ci]) for ci in cell_to_face.T ]
+
+    # ensure ordering in anti-clockwise order for matplotlib.tri.Triangulation.
+    idx = np.array(idx_pre, dtype=int)
+    for j,triple in enumerate(idx_pre):
+        coords = np.vstack( [ xx[triple], yy[triple] ]).T
+        o = anticlockwise_order(coords)
+        idx[j] = triple[o]
+    #
+
+    triang = tri.Triangulation(xx, yy, idx)
+
+    triobj = ax.triplot(
+        triang,
+        **kwargs
+    )
     # the end
     if flag_ax:
         return fig,ax

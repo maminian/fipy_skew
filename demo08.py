@@ -14,16 +14,28 @@ import colorcet
 
 import os
 
-ANIMATE = True
-SAVEFRAMES = False
+from scipy import stats
+
+ANIMATE = False
+SAVEFRAMES = True
 FRAMESDIR = 'frames_demo08'
 if not os.path.exists(FRAMESDIR):
     os.mkdir(FRAMESDIR)
 
 N = 1000    # total particles
-Pe = 1e3    # Peclet
-times = np.linspace(0,1,100)    # sample times
+Pe = 1e4    # Peclet
+dtmax = 1e-2
+#times = np.linspace(0,1,100)    # sample times
+times = 10.**np.linspace(-8,-1,21)
+times = np.concatenate([np.array([0]), times])
 
+fig_p,ax_p = pyplot.subplots(1,1, figsize=(8,6), constrained_layout=True)
+
+if ANIMATE:
+    # TODO: doesn't work
+    fig_p.show()
+    fig_p.canvas.draw()
+    pyplot.ion()
 
 TEMPLATE_OUTPUT = os.path.join(FRAMESDIR, 'frame_%s.png')
 ##
@@ -36,19 +48,25 @@ bdry = [ [np.cos(th), np.sin(th)] for th in ths]
 bdry = bdry + [[0.,-0.2],[-0.2,-0.2],[-0.2,0]]
 bdry = np.array(bdry)
 
-bdry = np.array([
-[-2,1],
-[-2, 0],
-[-1.,-0.5],
-[-1., -0.8],
-[-1.0, -1],
-[1.0, -1],
-[1., -0.8],
-[1.,-0.5],
-[2, 0],
-[2,1]
-])
-
+if False:
+    bdry = np.array([
+    [-2,1],
+    [-2, 0],
+    [-1.,-0.5],
+    [-1., -0.8],
+    [-1.0, -1],
+    [1.0, -1],
+    [1., -0.8],
+    [1.,-0.5],
+    [2, 0],
+    [2,1]
+    ])
+elif False:
+    th = np.linspace(0,2*np.pi,21)
+    bdry = np.array([np.cos(th[:-1]), np.sin(th[:-1])]).T
+else:
+    lam = 0.2
+    bdry = np.array([[-1/lam,-1],[1/lam,-1],[1/lam,1],[-1/lam,1]])
 
 #############################
 
@@ -62,15 +80,17 @@ zr,yr = np.max(bdry, axis=0)
 zl,yl = np.min(bdry, axis=0)
 
 X0 = np.random.rand(N,3)
-X0[:,0] = 0
+
+X0[:,0] = np.zeros(N)
 X0[:,1] = zl + (zr-zl)*X0[:,1]
 X0[:,2] = yl + (yr-yl)*X0[:,2]
 
-mask,active_cid = utils.locate_cell(X0[:,1:], fef.mesh, c_mats=fef.c_mats)
+mask,active_cells = utils.locate_cell(X0[:,1:], fef.mesh, c_mats=fef.c_mats)
 bads = np.logical_not(mask)
 idx = np.where(bads)[0]
 while not all(mask):
     _temp = np.random.rand(len(idx),3)
+    _temp[:,0] = 0
     _temp[:,1] = zl + (zr-zl)*_temp[:,1]
     _temp[:,2] = yl + (yr-yl)*_temp[:,2]
 
@@ -80,89 +100,180 @@ while not all(mask):
 
 # full repeat identifying active cells.
 # TODO: do this within the rejection sampling loop
-mask,active_cid = utils.locate_cell(X0[:,1:], fef.mesh, c_mats=fef.c_mats)
+mask,active_cells = utils.locate_cell(X0[:,1:], fef.mesh, c_mats=fef.c_mats)
 
 # main loop
 #t = 0.
 jj=0
+i=0
 
 X = np.array(X0) # why have copy of initial cond?
 
-for i,ti in enumerate(times[:-1]):
+mean_x = np.zeros(np.shape(times))
+var_x = np.zeros(np.shape(times))
+sk_x = np.zeros(np.shape(times))
+med_x = np.zeros(np.shape(times))
+
+mean_x[jj],var_x[jj],sk_x[jj],med_x[jj] = utils.compute_stats(X[:,0])
+
+if SAVEFRAMES:
+    ax_p.cla()
+    
+#    ax_p.scatter(X[:,1], X[:,2], c='k', s=4)
+    ax_p.scatter(X[:,1], X[:,2], c=X[:,0], s=4)
+    utils.vis_fe_mesh_2d(fef.flow, ax=ax_p, c='#999', linewidth=0.5)
+    
+    ax_p.set_xlim([bdry[:,0].min()-0.5, bdry[:,0].max()+0.5])
+    ax_p.set_xlim([bdry[:,1].min()-0.5, bdry[:,1].max()+0.5])
+    ax_p.axis('square')
+    ax_p.text( 0.05,0.95,r"$t=%.4e$"%times[i], transform=ax_p.transAxes, ha='left', va='top')
+    fig_p.savefig(TEMPLATE_OUTPUT%jj)
+
+
+jj+=1
+
+times_internal,save_times = utils.pad_times(times, dtmax)
+
+for i in range(1,len(times_internal)):
+    print("Start of iter %i, time %.3e"%(i,times_internal[i]))
+
 
     # get params
-    dt = times[i+1] - times[i]
+    dt = times_internal[i] - times_internal[i-1]
     dW = np.sqrt(2*dt)*np.random.randn(N,3)
 
-#    mask,active_cid = utils.locate_cell(X0[:,1:], fef.mesh, c_mats=fef.c_mats)
-    velos = fef.flow.value[active_cid]
+    velos = fef.flow.value[active_cells]
 
     # Evolve equations.
     X[:,0] += dt*Pe*velos + dW[:,0]
-    #X[:,1] += dW[:,1]
-    #X[:,2] += dW[:,2]
     YZ = X[:,1:] + dW[:,1:]
     
-    mask,active_cid = utils.locate_cell(YZ, fef.mesh, c_mats=fef.c_mats)
-    # determine if any particle have exited the domain
-    while not all(mask):
-        bads = np.logical_not(mask)
-        idx = np.where(bads)[0]
-        # For each particle we know that exited the domain,
-        for ii in idx:
-            acid = active_cid[ii]   #active cell related to particle's prior position.
-            d = np.linalg.norm(YZ[ii] - X[ii,1:])
+    # Did they end up somewhere within the mesh?
+    mask,_ = utils.locate_cell(YZ, fef.mesh, c_mats=fef.c_mats)
+
+    mask_to_vis = np.array(mask)
+
+    # What cell did they start out in?
+    _,active_cells = utils.locate_cell(X[:,1:], fef.mesh, c_mats=fef.c_mats)
+
+    out_of_bounds_idxs = np.where(np.logical_not(mask))[0]
+
+    for ii in out_of_bounds_idxs:
+        out_of_bounds = True
+
+        x0 = np.array( X[ii,1:] )
+        x1 = np.array( YZ[ii] )
+        tmp_exclude_faces = []
+
+        # 1. Find face crossing which is valid.
+        active_cell = active_cells[ii]
+        while out_of_bounds:
+            xorig = np.array(X[ii,1:])
+            face_cross_times = fef.argintersection(active_cell, x0, x1)
             
-            # get relative time to crossing of face
-            esses = fef.argintersection(acid,X[ii,1:],YZ[ii])
-            # get all neighboring faces
-            faces = fef.mesh.cellFaceIDs.data[:,acid]
-            # 0<=s<=1 corresponds to the physically relevant trajectory.
-            valid_mask = np.logical_and( esses>=0, esses<=1. )
-#            valid_mask = np.logical_and( valid_mask, np.logical_not(faces==active_face) )
+            face_ids = fef.mesh.cellFaceIDs.data[:,active_cell]
 
-            # while the particle still has "energy" and will cross some face,
-            x1 = np.array(YZ[ii])
-            x1i = np.array(X[ii,1:])
-            while any(valid_mask):
-                # find index of face with first valid intersection
-                j = (np.where(valid_mask)[0])[ np.argmin(esses[valid_mask]) ]
-                di = esses[j]*np.linalg.norm(x1-x1i)
-                s = di/d
+            # get valid crossings (boolean for each face)
+            valid_crossings = [0<fct and fct<=1 and fid not in tmp_exclude_faces for fct,fid in zip(face_cross_times,face_ids)]
+            tmp_exclude_faces = []
+            
+            # There may be two positive crossings; want the smaller of them.
+            if sum(valid_crossings)>1:
+                valid_crossings = np.logical_and(valid_crossings, face_cross_times < max(face_cross_times))
+            
+            if any(valid_crossings):
                 
-                x1i_temp = x1i + esses[j]*(x1 - x1i)
+                face_id_ptr = np.where(valid_crossings)[0][0]   # array position for face
+                face_cross_id = face_ids[ face_id_ptr ]         # global identifier for face
                 
-                di = np.linalg.norm(x1i_temp-x1i)
+                x0_temp = x0 + (x1-x0)*face_cross_times[face_id_ptr] # cartesian point
                 
-                active_face = fef.mesh.cellFaceIDs.data[:,acid][j]
-                if active_face in exterior_faces:
-                    # get the normal reflection.
-                    veci = X[ii,1:] - x1i
-                    normal = fef.mesh.faceNormals.data[:,active_face]
-                    newvec = veci - 2*normal*np.dot(normal, veci)
-                    # update x1
-                    x1 = x1i + newvec
+                # 2. Check if we passed in to another cell first.
+                # If face crossing was into another cell, assign the crossing point 
+                # at the face to x0; reset, and exclude the face as a valid face;
+                # reassign the active cell; then go to 1.
+
+                # what cells does this face lie on?
+                cell_neighbors = fef.mesh.faceCellIDs[:,face_cross_id].data
+                if not (face_cross_id in exterior_faces):
+                    neighbor_cell = cell_neighbors[0] if cell_neighbors[0] != active_cell else cell_neighbors[1]
+                    x0 = x0_temp
+                    tmp_exclude_faces = [face_cross_id]
+                    active_cell = neighbor_cell
+                    active_cells[ii] = neighbor_cell
                 else:
-                    x1 = x1i
-                #
-                
-                # Recompute valid_mask based on the
-                mask,temp_cid = utils.locate_cell(x1, fef.mesh, c_mats=fef.c_mats)
-                esses = fef.argintersection(temp_cid,x1i,x1)
-                
-                # get all neighboring faces
-                faces = fef.mesh.cellFaceIDs.data[:,temp_cid]
-                # 0<=s<=1 corresponds to the physically relevant trajectory.
-                valid_mask = np.logical_and( esses>=0, esses<=1. )
-            # end while for 
-            YZ[ii] = x1
-        #
-        # recompute particles and verify 
-        # TODO: rewrite code to only re-locate on the particles necessary.
-        mask,acid = utils.locate_cell(YZ, fef.mesh, c_mats=fef.c_mats)
-        print(sum(mask))
-    # end while loop for particles that exicted.
+                # 3. If face crossing which is valid is an exterior face,
+                # then calculate the reflection and reassign x1. Assign the crossing point 
+                # to x0. Reset and exclude disallowed reflection faces to exclude the crossing face.
 
+                    veci = x1-x0_temp
+                    normal = fef.mesh.faceNormals.data[:,face_cross_id]
+                    newvec = veci - 2*normal*np.dot(normal, veci)
+                    # update x0 to be boundary point.
+                    x0 = x0_temp
+                    # update x1
+                    x1 = x0_temp + newvec
+                    tmp_exclude_faces = [face_cross_id]
+                #
+            else:
+                out_of_bounds = False
+            # end if
+        # end while for single particle out-of-bounds.
+
+        # 4. Done!
+        YZ[ii] = x1
+        mask,_ = utils.locate_cell(x1, fef.mesh, c_mats = fef.c_mats)
+        if not mask:
+            print('what the fuck', ii, x1)
+            import pdb
+            pdb.set_trace()
+    # end for loop of out-of-bounds particles.
+    X[:,1:] = YZ
+    
+    # TODO: do we need to do a complete repeat of this???
+#    mask,active_cells = utils.locate_cell(X[:,1:], fef.mesh, c_mats=fef.c_mats)
+    
+    
+    if SAVEFRAMES and save_times[i]:
+        print("\tSaved a frame, ")
+        print("\t mean: %.3e; std: %.3e; skew: %.3e"%(mean_x[jj],np.sqrt(var_x[jj]),sk_x[jj]))
+        ax_p.cla()
+
+#        ax_p.scatter(X[:,1], X[:,2], c='k', s=4)
+        ax_p.scatter(X[:,1], X[:,2], c=mask_to_vis, s=4)
+        utils.vis_fe_mesh_2d(fef.flow, ax=ax_p, c='#999', linewidth=0.5)
+        
+        ax_p.set_xlim([bdry[:,0].min()-0.5, bdry[:,0].max()+0.5])
+        ax_p.set_ylim([bdry[:,1].min()-0.5, bdry[:,1].max()+0.5])
+        ax_p.axis('equal')
+        
+        ax_p.text( 0.05,0.95,r"$t=%.4e$"%times_internal[i], transform=ax_p.transAxes, ha='left', va='top')
+        fig_p.savefig(TEMPLATE_OUTPUT%jj)
+    if ANIMATE and save_times[i]:
+        # TODO: doesn't work
+        fig_p.canvas.draw()
+    
+    if save_times[i]:
+        # Calculate statistics
+        # Statistics on X.
+        mean_x[jj],var_x[jj],sk_x[jj],med_x[jj] = utils.compute_stats(X[:,0])
+        jj += 1
+    
 # end for loop
 
+# vis...
+from matplotlib import pyplot
+fig,ax = pyplot.subplots(1,2, figsize=(12,6))
+
+ax[0].plot(times,sk_x, marker='.', markersize=2)
+ax[0].set_xscale('log')
+utils.vis_fe_2d(fef.flow, cbar=False, ax=ax[1])
+utils.vis_fe_mesh_2d(fef.flow, c='#555', linewidth=0.1, ax=ax[1])
+ax[1].axis('equal')
+
+ax[0].set_xlabel('time')
+ax[0].set_ylabel('Sk')
+
+fig.show()
+pyplot.ion()
 
