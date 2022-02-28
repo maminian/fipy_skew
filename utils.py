@@ -500,3 +500,203 @@ def _in_Carr(point, Carr):
     flags = np.all( np.dot(Carr, Pall.T) >= 0, axis=0)
     return flags
 #
+
+class Sk_Asymptotics:
+    '''
+    Class to compute and store the results of computing 
+    predicted asymptotics of mass statistics.
+    
+    Initialize with an n-by-2 numpy array parameterizing the 
+    boundary.
+    
+    Built off of demo12.py as a prototype.
+    '''
+    def __init__(self, boundary, cell_size_rel=0.005):
+        import gen_mesh
+        import numpy as np
+
+        import fipy
+#        from fipy import CellVariable, Gmsh2D, TransientTerm, DiffusionTerm
+        
+        assert len(np.shape(boundary))==2
+        assert np.shape(boundary)[1] == 2
+        self.boundary = boundary
+        
+        #self.fef = fe_flow.fe_flow(boundary, cell_size=cell_size, verbosity=0)
+        
+#        oneish = np.sqrt(10)/3. - 0.054  # something vaguely irrational
+        domain_scale = np.max(boundary) - np.min(boundary)
+        cellSize = cell_size_rel*domain_scale
+
+        mesh = gen_mesh.gen_mesh(boundary,cellSize)
+        self.mesh = mesh
+
+
+        flow = fipy.CellVariable(name = r"$u$ (flow)", mesh=mesh, value=0.)
+
+        flow.constrain(0., mesh.exteriorFaces) # dirichlet boundary condition
+
+        forcing = fipy.CellVariable(mesh=mesh, name='pressure gradient', value=2.)
+
+        eq = (-fipy.DiffusionTerm(coeff=1.) == forcing) # set up poisson eqn
+        eq.solve(var=flow)
+
+
+        #######
+
+        # part 2 - use the flow as the driver for a Neumann problem (cell problem)
+        # laplace(theta) = tphi, normal_deriv(theta) = 0.
+        theta = fipy.CellVariable(name = r"$g_1$ (cell problem)", mesh=mesh, value=0.)
+
+        # does this set Neumann boundary conditions?
+        theta.faceGrad.constrain([0], mesh.exteriorFaces)
+
+        # assign arbitrary value to a single thing
+        # adjusted after the fact by mean-zero solvability condition at next level.
+        theta.constrain(0, [1 if i==0 else 0 for i in range(len(mesh.facesLeft))])
+
+        # subtract mean from flow
+        mz_flow = fipy.CellVariable(name = "mean-zero flow", mesh=mesh, value=0.)
+        mz_flow.value = flow.value - self.c_average(flow)
+
+        # set up cell equation; theta in some texts; g_1 in my thesis.
+        cell_eq = (-fipy.DiffusionTerm(coeff=1.) == mz_flow)
+
+        # solve (?)
+        cell_eq.solve(var=theta)
+
+        # adjust theta
+        mz_theta = fipy.CellVariable(name = "mean-zero cell", mesh=mesh, value=0.)
+        mz_theta.value = theta.value - self.c_average(theta)
+
+
+        # look at level curves of the cell problem. Should look perp to boundary.
+        #ax.tricontour(cellX, cellY, mz_theta.value, 11, colors='w')
+
+        ######################
+
+        # set up and solve g_2 problem.
+
+        ug1 = mz_flow*mz_theta
+
+        g2_driver = fipy.CellVariable(name = r"$g_2$ driver", mesh=mesh, value=0.)
+        g2_driver.value = 2*(ug1.value - self.c_average(ug1))
+
+        g2 = fipy.CellVariable(name=r'$g_2$', mesh=mesh, value=0.)
+
+        # set up cell equation; theta in some texts; g_1 in my thesis.
+        g2_eq = (-fipy.DiffusionTerm(coeff=1.) == g2_driver)
+
+        # solve (?)
+        g2_eq.solve(var=g2)
+
+        g2min = g2.value.min()
+        g2max = g2.value.max()
+
+        g2range = max(abs(g2min), abs(g2max))
+
+        self.flow = flow
+        self.mz_flow = mz_flow
+        self.theta = theta
+        self.g1 = mz_theta
+        self.g2 = g2
+
+        # look at level curves of the cell problem. Should look perp to boundary.
+
+
+        ###########
+
+        # Calculate the asymptotics formulas from "Mass distribution and skewness..."
+        # 
+        # Short-time (geometric/advective-only skewness)
+        # compute <u~>, <u~^2>, <u^2>, <u^3>, then the asymptotics are
+        #
+        # M_1 ~ 0,
+        # M_2 ~ 2t + Pe**2*<u^2>*t^2 - 2/3*Pe**2*<u~>*t^3
+        # M_3 ~ Pe^3*<u^3>*t^3 - (<u~^2> - 2<u~>^2)*t^4
+        #
+
+        util1_avg = self.c_average(flow)
+        util2_avg = self.c_average(flow**2)
+        u2_avg = self.c_average(mz_flow**2)
+        u3_avg = self.c_average(mz_flow**3)
+
+        SG = u3_avg/(u2_avg**(3/2))
+
+        # Long time skewness
+        # 
+        # Compute g1, g2 (done above) and <u*g_1>, <u*g_2>. 
+        # Then skewness decays like
+        # 3*Pe**3*<u*g_2>/(2 + 2*Pe**2*<u*g_1>)**(3/2) * t**(-1/2).
+        #
+        # Note the denominator term 2*Pe**2*<u*g_1> is the enhancement 
+        # to the molecular diffusivity, which in these units is 2.
+        #
+
+        ug1_avg = self.c_average(mz_flow*mz_theta)
+        ug2_avg = self.c_average(mz_flow*g2)
+
+        SLONG = 3*ug2_avg/(2*ug1_avg)**(3/2)
+        
+        self.util1_avg = util1_avg
+        self.util2_avg = util2_avg
+        self.u2_avg = u2_avg
+        self.u3_avg = u3_avg
+        
+        self.ug1_avg = ug1_avg
+        self.ug2_avg = ug2_avg
+        
+        self.SG = SG
+        self.SLONG = SLONG
+
+        return
+        
+    def c_integrate(self,cvar):
+        '''
+        Use fipy routines to integrate an object (naive riemann sum)
+        
+        Input: cvar
+            A fipy.variables.cellVariable.CellVariable
+        Output: a scalar.
+        '''
+        # is there a higher-order version of this?
+        # does it make sense to do anything more sophisticated?
+        return (cvar.mesh.cellVolumes * cvar.value).sum()
+    #
+
+    def c_average(self,cvar):
+        '''
+        Use fipy routines to find the average an object; roughly,
+        
+        c_integrate(cvar)/Volume(cvar.mesh)
+        
+        This should be invariant to constants 
+        (average of a constant function is the scalar constant)
+        
+        Input: cvar
+            A fipy.variables.cellVariable.CellVariable
+        Output: a scalar; the domain average of the object.
+        
+        '''
+        # There's also a built-in cvar.cellVolumeAverage
+        # This can be done more efficiently, but this won't be used often.
+        return self.c_integrate(cvar)/(cvar.mesh.cellVolumes.sum())
+    #
+    
+    def compute_ST_asymptotics(self, t, Pe=10**4):
+    
+        M1_asymp = np.zeros(t.shape)
+        M2_asymp = 2*t + Pe**2*self.u2_avg*t**2 - 2/3*Pe**2*self.util1_avg*t**3
+        M3_asymp = Pe**3*self.u3_avg*t**3 - (self.util2_avg - 2*self.util1_avg**2)*t**4
+
+        Sk_asymp_short = M3_asymp/(M2_asymp)**(3/2) # right power?
+        return M1_asymp,M2_asymp,M3_asymp,Sk_asymp_short
+        
+    def compute_LT_asymptotics(self, t, Pe=10**4):
+
+        keff_long = 2*t + 2*Pe**2*self.ug1_avg*t
+        M3_asymp_long = 3*Pe**3*self.ug2_avg*t
+        Sk_asymp_long = M3_asymp_long/(keff_long)**(3/2)
+        
+        return keff_long, M3_asymp_long, Sk_asymp_long
+    
