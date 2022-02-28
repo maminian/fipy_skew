@@ -12,7 +12,7 @@ from fipy import CellVariable, Gmsh2D, TransientTerm, DiffusionTerm
 
 import numpy as np
 from matplotlib import pyplot
-
+import os
 
 import gen_mesh
 import utils
@@ -52,12 +52,22 @@ def colorize(arr):
 #s = 8
 #pts = np.array([ [np.cos(th), np.sin(th)] for th in 2*np.pi/s*np.arange(s) ])
 
-import demo09
-pts = demo09.coords
-pts = pts - np.mean(pts, axis=0)
-pts = pts/(np.std(pts, axis=0))
+if True:
+    import demo09
+    pts = demo09.coords
+    pts = pts - np.mean(pts, axis=0)
+    pts = pts/(np.std(pts, axis=0))
+else:
+    lam = 1.0
+    #pts = [[-1/lam,-1],[1/lam,-1],[1/lam,1],[-1/lam,1]]
+    th = np.linspace(0,2*np.pi, 200)
+    x = 1/lam*np.cos(th[:-1])
+    y = np.sin(th[:-1])
+    pts = np.vstack([x,y]).T
 
 Pe = 10**4
+basename = 'tapir2'
+fname = os.path.join('images','%s.png'%basename)
 
 ########################
 
@@ -71,44 +81,57 @@ _,_,Sk_asymp_long = asymptotics.compute_LT_asymptotics(t_long,Pe=Pe)
 ####
 # big vis
 
-fig,ax = pyplot.subplots(1,3, figsize=(15,5), sharex=True, sharey=True, constrained_layout=True)
+fig = pyplot.figure(constrained_layout=True)
+mosaic = '''
+ABC
+DDD
+'''
+ax = fig.subplot_mosaic(mosaic)
+
+###
+
+#fig,ax = pyplot.subplots(1,3, figsize=(15,5), sharex=True, sharey=True, constrained_layout=True)
 
 
-utils.vis_fe_2d(asymptotics.flow, antialiased=True, cmap=my_cm, ax=ax[0], cbar=False)
-utils.vis_fe_2d(asymptotics.g1, antialiased=True, cmap=my_cm2, ax=ax[1], cbar=False, cstyle='divergent')
-utils.vis_fe_2d(asymptotics.g2, antialiased=True, cmap=my_cm3, ax=ax[2], cbar=False, cstyle='divergent')
+utils.vis_fe_2d(asymptotics.flow, antialiased=True, cmap=my_cm, ax=ax["A"], cbar=False)
+utils.vis_fe_2d(asymptotics.g1, antialiased=True, cmap=my_cm2, ax=ax["B"], cbar=False, cstyle='divergent')
+utils.vis_fe_2d(asymptotics.g2, antialiased=True, cmap=my_cm3, ax=ax["C"], cbar=False, cstyle='divergent')
 
 
 #
 
 cellX,cellY = asymptotics.mesh.cellCenters.value
-ax[0].tricontour(cellX, cellY, asymptotics.flow.value, 11, colors='k')
-ax[1].tricontour(cellX, cellY, asymptotics.g1.value, 11, colors='k')
-ax[2].tricontour(cellX, cellY, asymptotics.g2.value, 11, colors='k')
+ax["A"].tricontour(cellX, cellY, asymptotics.flow.value, 11, colors='k')
+ax["B"].tricontour(cellX, cellY, asymptotics.g1.value, 11, colors='k')
+ax["C"].tricontour(cellX, cellY, asymptotics.g2.value, 11, colors='k')
 
 #
-ax[0].axis('square')
-ax[1].axis('square')
-ax[2].axis('square')
-fig.show()
+ax["A"].axis('equal')
+ax["B"].axis('equal')
+ax["C"].axis('equal')
+#fig.show()
 
 ###
 
-fig2,ax2 = pyplot.subplots(1,1, figsize=(8,4), constrained_layout=True)
-ax2.plot(t_short, Sk_asymp_short, lw=2, ls='--')
-ax2.plot(t_long, Sk_asymp_long, lw=2, ls='--')
+#fig2,ax2 = pyplot.subplots(1,1, figsize=(8,4), constrained_layout=True)
+ax["D"].plot(t_short, Sk_asymp_short, lw=2, ls='--')
+ax["D"].plot(t_long, Sk_asymp_long, lw=2, ls='--')
 
-ax2.text(
-0.05,0.95,
+ax["D"].text(
+0.02,0.02,
 r"$S^{G} = %.4f$"%(asymptotics.SG) + "\n" + r"$S_{long} = %.4f$"%asymptotics.SLONG, 
-ha='left', va='top', 
-transform=ax2.transAxes
+ha='left', va='bottom', 
+transform=ax["D"].transAxes,
+fontsize=10,
+bbox={'facecolor':'#eee', 'edgecolor':'#bbb', 'boxstyle':'round', 'lw':1}
 )
 
-ax2.set_xscale('log')
-ax2.grid()
+ax["D"].set_xscale('log')
+ax["D"].grid()
 
-fig2.show()
+#
+import os
+fig.savefig(fname)
 
 pyplot.ion()
 
