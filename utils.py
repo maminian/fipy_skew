@@ -638,6 +638,9 @@ class Sk_Asymptotics:
 
         SLONG = 3*ug2_avg/(2*ug1_avg)**(3/2)
         
+        self.area = self.mesh.cellVolumes.sum()
+        self.ly, self.lz = np.max( self.boundary, axis=0 ) - np.min( self.boundary, axis=0 )
+        
         self.util1_avg = util1_avg
         self.util2_avg = util2_avg
         self.u2_avg = u2_avg
@@ -699,4 +702,16 @@ class Sk_Asymptotics:
         Sk_asymp_long = M3_asymp_long/(keff_long)**(3/2)
         
         return keff_long, M3_asymp_long, Sk_asymp_long
-    
+        
+    def return_statistics(self):
+        '''
+        Returns a collection of scalar statistics related to asymptotics for the cross section...
+            0. Area of the cross section
+            1. largest span in the z coordinate (horizontal coord)
+            2. largest span in the y zoordinate (vertical coord)
+            3. Cross-sectional average of flow (lab-frame)
+            4. Average of u*g1, which is part of the enhanced diffusion kappa*(1 + Pe**2 * <ug1>)
+            5. Geometric skewness; coefficient for skewness in advective time scales
+            6. Long time skewness; coefficient for skewness decay to zero of the form LG*t**-1/2
+        '''
+        return ( self.area, self.lz, self.ly, self.util1_avg, self.ug1_avg, self.SG, self.SLONG )

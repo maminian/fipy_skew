@@ -78,6 +78,8 @@ asymptotics = utils.Sk_Asymptotics(pts)
 _,_,_,Sk_asymp_short = asymptotics.compute_ST_asymptotics(t_short,Pe=Pe)
 _,_,Sk_asymp_long = asymptotics.compute_LT_asymptotics(t_long,Pe=Pe)
 
+print( asymptotics.return_statistics() )
+
 ####
 # big vis
 
@@ -130,9 +132,9 @@ ax["D"].set_xscale('log')
 ax["D"].grid()
 
 #
-import os
-fig.savefig(fname)
+if False:
+    import os
+    fig.savefig(fname)
 
 pyplot.ion()
 
-#fig.savefig('spatial_solutions.png', dpi=120, bbox_inches='tight')
