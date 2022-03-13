@@ -23,7 +23,7 @@ import multiprocessing
 def process_domain(inputs):
     i,name,pts = inputs
 
-    asymptotics = utils.Sk_Asymptotics(pts, cell_size_rel=0.002)
+    asymptotics = utils.Sk_Asymptotics(pts, cell_size_rel=0.005)
     result = asymptotics.return_statistics()
     print(i, name)
     return [i,name] + list(result)
@@ -72,14 +72,14 @@ p = multiprocessing.Pool(4)
 
 ##
 
-aratios = np.linspace(0,1,41)[1:]
+aratios = np.linspace(0,1,21)[1:]
 #inputs = [ [i,'ellipse_%s'%str(i).zfill(4),generate_ellipse(a)] for i,a in enumerate(aratios)]
 #inputs = [ [i,'ellipse_%s'%str(i).zfill(4),generate_rectangle(a)] for i,a in enumerate(aratios)]
 inputs = []
 import itertools
 lams = []
 qs = []
-for i,pair in enumerate(itertools.product( aratios, np.linspace(0,1,11) )):
+for i,pair in enumerate(itertools.product( aratios, np.linspace(0,1,21) )):
     inputs.append([i, 'trapezoid_%s'%str(i).zfill(4), generate_trapezoid(*pair)])
     lams.append(pair[0])
     qs.append(pair[1])
