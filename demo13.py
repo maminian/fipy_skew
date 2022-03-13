@@ -6,46 +6,16 @@
 # (ex: solving the cell problem Laplace(theta) = u, Neumann boundaries)
 #
 
-import fipy
-
-from fipy import CellVariable, Gmsh2D, TransientTerm, DiffusionTerm
-
 import numpy as np
 from matplotlib import pyplot
 import os
 
-import gen_mesh
 import utils
 
-
-
-import cmocean  # just for colormap
 import colorcet
 my_cm = colorcet.cm.kbc
 my_cm2 = colorcet.cm.gwv
 my_cm3 = colorcet.cm.cwr
-
-
-##
-# CellVariable tools
-#
-def c_integrate(cvar):
-    # is there a higher-order version of this?
-    # does it make sense to do anything more sophisticated?
-    return (cvar.mesh.cellVolumes * cvar.value).sum()
-#
-
-def c_average(cvar):
-    # There's also a built-in cvar.cellVolumeAverage
-    return c_integrate(cvar)/(cvar.mesh.cellVolumes.sum())
-#
-
-###
-
-def colorize(arr):
-    # helper function to replace fipy's colormap; map data to [0,1].
-    return (arr - arr.min())/(arr.max() - arr.min())
-
 
 ##################
 
@@ -78,8 +48,6 @@ asymptotics = utils.Sk_Asymptotics(pts)
 _,_,_,Sk_asymp_short = asymptotics.compute_ST_asymptotics(t_short,Pe=Pe)
 _,_,Sk_asymp_long = asymptotics.compute_LT_asymptotics(t_long,Pe=Pe)
 
-print( asymptotics.return_statistics() )
-
 ####
 # big vis
 
@@ -91,9 +59,6 @@ DDD
 ax = fig.subplot_mosaic(mosaic)
 
 ###
-
-#fig,ax = pyplot.subplots(1,3, figsize=(15,5), sharex=True, sharey=True, constrained_layout=True)
-
 
 utils.vis_fe_2d(asymptotics.flow, antialiased=True, cmap=my_cm, ax=ax["A"], cbar=False)
 utils.vis_fe_2d(asymptotics.g1, antialiased=True, cmap=my_cm2, ax=ax["B"], cbar=False, cstyle='divergent')
@@ -111,11 +76,9 @@ ax["C"].tricontour(cellX, cellY, asymptotics.g2.value, 11, colors='k')
 ax["A"].axis('equal')
 ax["B"].axis('equal')
 ax["C"].axis('equal')
-#fig.show()
 
-###
+##
 
-#fig2,ax2 = pyplot.subplots(1,1, figsize=(8,4), constrained_layout=True)
 ax["D"].plot(t_short, Sk_asymp_short, lw=2, ls='--')
 ax["D"].plot(t_long, Sk_asymp_long, lw=2, ls='--')
 
@@ -136,5 +99,6 @@ if False:
     import os
     fig.savefig(fname)
 
+fig.show()
 pyplot.ion()
 
