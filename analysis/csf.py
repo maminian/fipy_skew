@@ -80,10 +80,11 @@ fig4.show()
 
 #######
 
-fig.savefig('skew_g_trapezoids.png')
-fig2.savefig('skew_l_trapezoids.png')
-fig3.savefig('log_k_enh_trapezoids.png')
-fig4.savefig('trap_rect_comparison.png')
+if False:
+    fig.savefig('skew_g_trapezoids.png')
+    fig2.savefig('skew_l_trapezoids.png')
+    fig3.savefig('log_k_enh_trapezoids.png')
+    fig4.savefig('trap_rect_comparison.png')
 #
 
 
