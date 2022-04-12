@@ -1,6 +1,7 @@
 import pandas
 from matplotlib import pyplot
 import numpy as np
+import datetime
 
 pyplot.style.use('ggplot')
 
@@ -33,9 +34,19 @@ colors='#800', alpha=0.4)
 #
 # with hatches...
 
-ax.tricontourf(df['lambda'],df['q'],np.logical_and(-0.1<df['skew_l'],df['skew_l']<0.1), levels=[0,1,2], vmin=-0.15,vmax=0.15, colors=None, hatches=['','\\\\'], alpha=0)
+# TODO: hatches don't seem to respect the linear interpolation 
+# used by the rest of the contour tools. Can I get this to work?
 
-ax.tricontourf(df['lambda'],df['q'],np.logical_and(-0.1<df['skew_g'],df['skew_g']<0.1), levels=[0,1,2], vmin=-0.15,vmax=0.15, colors=None, hatches=['','//'], alpha=0)
+#ax.tricontourf(df['lambda'],df['q'],np.logical_and(-0.1<df['skew_l'],df['skew_l']<0.1), levels=[0,1,2], vmin=-0.15,vmax=0.15, colors=None, hatches=['','\\\\'], alpha=0)
+
+#ax.tricontourf(df['lambda'],df['q'],np.logical_and(-0.1<df['skew_g'],df['skew_g']<0.1), levels=[0,1,2], vmin=-0.15,vmax=0.15, colors=None, hatches=['','//'], alpha=0)
+
+fig.savefig('short_long_intersection.pdf',
+metadata = {
+    'Creator' : __file__,
+    'Author': 'Manuchehr Aminian'
+    }
+)
 
 fig.show()
 
