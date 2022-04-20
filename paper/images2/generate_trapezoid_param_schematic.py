@@ -49,7 +49,8 @@ for axn,pair in zip(['A','B','C'], [pr,pair1,pair2], ):
     
     # polish
     ax[axn].fill(X[:,0], X[:,1], c='#ddd')
-    ax[axn].text(-5.9,1.45, r'$(\lambda,q) = (%.2f,%.2f)$'%tuple(pair), ha='left', va='top', fontsize=14 )
+    ax[axn].text(-5.9,-1.45, r'$(\lambda,q) = (%.2f,%.2f)$'%tuple(pair), ha='left', va='bottom', fontsize=12 )
+    ax[axn].text(-5.9,1.45, axn, ha='left', va='top', fontsize=16, fontweight='bold')
     
     ax[axn].set_ylim([-1.5,1.5])
     ax[axn].set_xlim([-6,6])
