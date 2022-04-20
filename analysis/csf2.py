@@ -2,9 +2,9 @@ import pandas
 from matplotlib import pyplot, tri
 import numpy as np
 import datetime
+import os
 
-pyplot.style.use('ggplot')
-
+#pyplot.style.use('ggplot')
 
 fig,ax = pyplot.subplots(1,1, figsize=(8,8), constrained_layout=True)
 
@@ -14,7 +14,8 @@ HATCHME = False # hatches are misbehaving.
 
 #####3
 
-data_file = '../cross_section_features/trapezoid_asymptotics_march12_2.csv'
+data_file = '../cross_section_features/trapezoid_asymptotics_april19_1.csv'
+data_file_basename = os.path.basename(data_file)
 df = pandas.read_csv(data_file)
 
 # Insertion of triangulation made beforehand.
@@ -33,9 +34,11 @@ skl_contours = ax.tricontour(triang,df['skew_l'], levels=[-0.1,0,0.1], vmin=-0.1
 
 # regions
 
-ax.tricontourf(df['lambda'],df['q'],df['skew_g'], levels=[-0.1,0,0.1], vmin=-0.15,vmax=0.15, colors=color_g, alpha=1,zorder=0)
+ax.tricontourf(df['lambda'],df['q'],df['skew_g'], levels=[-0.1,0,0.1], vmin=-0.15,vmax=0.15, colors=color_g, alpha=0.8,zorder=10)
 
-ax.tricontourf(df['lambda'],df['q'],df['skew_l'], levels=[-0.1,0,0.1], vmin=-0.15,vmax=0.15, colors=color_l, alpha=0.5,zorder=10)
+ax.tricontourf(df['lambda'],df['q'],df['skew_l'], levels=[-0.1,0,0.1], vmin=-0.15,vmax=0.15, colors=color_l, alpha=0.5,zorder=20)
+
+ax.grid(c='#ddd', lw=2)
 
 if HATCHME:
     #
@@ -54,7 +57,7 @@ if HATCHME:
 
 #
 
-if False:
+if True:
     fig.savefig('short_long_intersection.pdf',
     metadata = {
         'Creator' : __file__ + " using data " + data_file_basename,
