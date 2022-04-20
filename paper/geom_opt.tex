@@ -48,58 +48,115 @@ object.
 
 Explicitly,
 \begin{enumerate}
-\item Build/use finite element code on a platform that also allows for 
-implementing a Monte Carlo style simulation
+\item \textbf{(loosely done; needs optimizaiton for MC)}
+Build/use finite element code on a platform that also allows for 
+implementing a Monte Carlo style simulation.
+\item Validate finite element code convergence on equilateral triangle flow problem.
 \item Quick validation of the code comparing asymptotic hallmarks 
 (circle and parallel plates diffusivity enhancement and skewness).
 \item do a full param sweep of the family of trapezoidal domains numerically. 
-\item Do a numerical study of the param sweep, investigating
+\item \textbf{(loosely done, pending tweaks to param sweep)} 
+Do a numerical study of the param sweep, investigating
 Zero, or near-zero level sets for geometric (ballistic) skewness 
 as well as the asymptotic long time skewness coefficient
 \item Given a sample of diffusion enhancement of the samples, 
 implement a constrained optimization scheme to minimize 
 diffusion enhancement keeping a fixed net flux; or fixed net 
 cross sectional area; within reasonable bounds.
-\item Try to implement ``learning" schemes by which computer-calculated 
+\item \textbf{(feeling less excited about this tonight)} Try to implement ``learning" schemes by which computer-calculated 
 asymptotics inform search directions for full numerical simulations.
 \item Build evidence towards skewness associated to some notion of 
 \textbf{girth} of the domain; maximum distance over all continuous 
-paths in the domain connected to the center. 
+paths in the domain connected to the ``center" (peak flow point(s)).
 \end{enumerate}
 
 \section{Setup}
 \subsection{Fluid and tracer equations}
-Steady laminar fluid flow is driven by a constant pressure gradient. 
-By convention, we choose the constant to be $-2$ so that the flow 
-equation for a one-dimensional channel is $1-y^2$.
+First I will describe the general scenario and introduce notation. 
 
-I choose $\Omega$ to represent the cross-section of the domain, and 
-$\partial \Omega$ to be its boundary. The $x$-coordinate represents the 
-flow direction, so $z$ and $y$ are coordinates for the cross-section. 
-$y$ remains the vertical coordinate in this scheme, so $z$ is the horizontal coordinate. 
-Notions of aspect ratio are represented by $\lambda$, and domains are 
-aligned so that their axes are along the $z$ and $y$ directions. 
-My meaning of aspect ratio is the ratio of short to long sides of the 
-shape, so that $0 < \lambda \leq 1$, and a limit $\lambda \to 0$ for 
-the rectengular cross sections is expected to reduce to the one-dimensional 
-channel.
+A passive tracer is assumed contained within a pipe or rectangular channel, 
+advected by an ambient fluid flow. The solution of the fluid flow is 
+not the main purpose for this study, but I describe the main steps here, as its 
+solution enters into both asymptotic formulas as well as numerical simulation 
+for the tracer. 
+
+The flow itself is highly idealized, which allows for downstream analysis 
+of behavior of the tracer. 
+Fluid flow occurs only in the $\mathbf{x}$ direction of the pipe of 
+infinite length in the $\mathbf{x}$ direction, with a fixed cross section 
+independent of $x$. The 
+perpendicular directions are denoted $\mathbf{z}$ and $\mathbf{y}$, and 
+coordinates $(z,y)$. 
+I refer to the cross section of the pipe or channel in either 
+$y$ or $(y,z)$ as $\Omega$, 
+and the boundary of this cross section $\partial \Omega$. 
+
+The fluid flow is driven by a 
+constant pressure gradient in the $\mathbf{x}$ direction, with no 
+pressure gradient in the other directions, and is assumed in 
+steady-state. The fluid itself 
+is assumed incompressible with constant density. 
+These assumptions constrain the flow sufficiently to a form $\mathbf{u} = (u(y,z), 0, 0)$. 
+Further, I assume a no-slip boundary condition for the flow on the boundary of the pipe. 
+All these taken together, the remaining equation for $u(y,z)$ is:
 %
 \begin{equation}
-\label{flow_equation}
-\Delta \tilde{u} = -2 \quad \left. \tilde{u} = 0 \right|_{\partial \Omega}
+\Delta u(y,z) = -\frac{1}{\rho_0} \frac{\partial p}{\partial x}, \quad u(y,z)|_{\partial \Omega} = 0.
+\end{equation}
+%
+A reasonable choice of nondimensionalization results in 
+the right-hand side being replaced with $-2$. This choice is made following a convention 
+of myself and my colleagues, which leads to a minimalist's 
+solution for a one-dimensional channel (parallel infinite plates):
+%
+\begin{equation}
+u_{yy} = -2 \quad \Rightarrow \quad u(y) = 1-y^2.
+\end{equation}
+%
+My main interest in this paper is continuing investigation into influence of 
+the shape of the cross section $\Omega$ on properties of the tracer distribution. 
+As shown in prior work, a distinctly important property is aspect ratio. 
+Aspect ratio in this paper is represented by $\lambda$, the ratio of the height (the span 
+of the domain in $y$) to 
+width (the span onf the domain in $z$) values in the cross section, 
+so that $0 < \lambda \leq 1$, and a 
+the behavior of limit $\lambda \to 0$ for 
+the rectangular cross sections is expected to reduce to the one-dimensional 
+channel.
+Domains are generally 
+aligned so that their principal axes (in a informal sense of the word) are 
+along the $z$ and $y$ directions. 
+%
+
+To calculate of established asymptotic formulas for statistics, an averaging 
+operator is needed. For arbitrary $f(y,z)$ and domain $\Omega$, I use angle brackets:
+\begin{equation}
+\langle f \rangle \equiv \frac{\int_{\Omega} f dzdy}{\int_{\Omega} 1 dzdy}.
 \end{equation}
 
+An early step in a full derivation of enhanced diffusivity 
+is to center the analysis in the frame of reference of the 
+mean speed of the flow by a Galiean transform $x \to x - vt$ for constant velocity $v$. 
+Surprisingly, some asymptotic formulas rely on both 
+calculations of the lab-frame and mean-zero flow, so notation for both is needed. 
+Since working with the mean-zero flow is more common, 
+I denote the lab-frame flow $\tilde{u}$ and mean-zero flow $u$, which are related to 
+each other by:
+%
 \begin{equation}
-\langle f \rangle \equiv \frac{\int_{\Omega} f dydz}{\int_{\Omega} 1 dydz}
+u = \tilde{u} - \langle \tilde{u} \rangle.
 \end{equation}
+%
+The constant velocity term for the Galilean transform in this context 
+is $v = \langle \tilde{u} \rangle$.
 
+Finally, the advection-diffusion equation for the tracer $C(x,y,z,t)$ is written 
+as: 
 \begin{equation}
-u \equiv \tilde{u} - \langle \tilde{u} \rangle
+C_t + \mathrm{Pe} \, u(y,z) C_x = \Delta C, \quad \left. \underline{n} \cdot \nabla C\right|_{\partial \Omega} = 0.
 \end{equation}
-
-\begin{equation}
-C_t + \mathrm{Pe} \, u C_x = \Delta C, \quad \left. \underline{n} \cdot \nabla C\right|_{\partial \Omega} = 0 
-\end{equation}
+Zero Neumann boundary conditions are assumed which represent a no-flux condition 
+for the tracer.
 
 \subsection{Numerical tools}
 Python 3.8.10 (cite) is used throughout this project. Numpy (cite) and 
@@ -108,44 +165,60 @@ computing and visualization.
 
 The finite element code \texttt{fipy} was used as a framework for 
 building meshes and accessing edges, cells, normals, boundary edges, etc. 
-I implemented additional tools to simplify the interface to create 
-a boundary by naming a list of $x$ and $y$ coordinates in two dimensions 
-(For example: the fipy-level interface requires constructing a string to, in turn, call Gmsh.) 
-An appeal of \texttt{fipy} is its support for expressing 
-and solving partial differential equations (PDEs) without much code
-form; for instance, one defines an object associated with 
-equation (\ref{flow_equation}) as an object, then specifies which mesh 
-edges represent boundary conditions (and their values) and then runs a 
-\texttt{.solve()} method. This made calculations for asymptotic 
-predictions fairly straightforward.
+I implemented additional tools to simplify the creation of 
+a domain through its boundary by naming a list of $x$ and $y$ coordinates in 
+two dimensions. 
+Note the fipy-level interface requires programmatically constructing a string to, 
+in turn, call the meshing library \texttt{Gmsh}. 
+The value of \texttt{fipy} is apparent in its support for expressing 
+and solving partial differential equations without much technical coding baggage. 
+For instance, to get a finite element solution for the flow, 
+one defines an object associated with 
+equation (\ref{flow_equation}), where Laplace operator is specified abstractly, 
+then specifies which elements of the mesh 
+represent boundary conditions (and their values), then runs a 
+\texttt{.solve()} method. 
 
-\subsection{Convention for domains}
+\subsection{Conventions for arbitrary domains}
 In the general case, a domain is a polygon with an arbitrary 
-number of points ${(x_i, y_i), \; i=1,\ldots,N }$ where 
-consecutive points connect with line segments, and point $N$ connects 
-with point $1$. The choice $N$ is only decided by the questions 
+number of points ${(z_i, y_i), \; i=1,\ldots,N }$ where 
+consecutive points connect with line segments, and point $N$ by convention connects 
+back to point $1$. The choice of number of points $N$ is only decided by the questions 
 one wants to answer. The first part of this paper studies trapezoidal 
-domains of a certain class. Because of the multiple symmetries, 
-there will be only two free parameters instead of eight.
+domains of a certain class, where $N=4$. Because of the multiple symmetries and 
+invariants, there is in fact only two free parameters instead of eight ($2N$).
 
-I define the family of trapezoidal domains using parameters $\lambda$ 
-to represent aspect ratio, and $q$ to represent the ``eccentricity" 
-(what's the proper word?). Trapezoid height is always $2$ by convention, 
-and longer width is $2/\lambda$. The shorter width is $2q/\lambda$. 
-Then, trapezoids are defined by a pair $(\lambda,q)$, where boundaries 
-reduce to other shapes;
+The family of trapezoids I work with are illustrated in \ref{fig:TRAP_SCHEMATIC}. 
+The longer width is $2/\lambda$, understood as an aspect ratio. A 
+second parameter $q$ (``eccentricity") defines the shorter width, $2q/\lambda$, 
+relative to the aspect ratio. The trapezoid heights are chosen as $2$ by convention. 
+%
+\begin{figure}
+\includegraphics[width=\linewidth]{images2/trapezoid_param_schematic.pdf}
+\caption{General schematic of trapezoid domains with a few examples illustrated. 
+Panel A: Choices of $\lambda$ affect the ratio of height to width of the longer side. 
+Choices of $q$ change the ratio of the shorter to longer widths of the trapezoid. 
+Panel B, C: Resulting trapezoids for two other pairs of $(\lambda,q)$ shown.}
+\label{fig:TRAP_SCHEMATIC}
+\end{figure}
+%
+Then, these trapezoids are fully defined by a pair $(\lambda,q)$. 
+Specific values of $(\lambda,q)$ reduce to other shapes:
 %
 \begin{itemize}
 \item Shapes $(\lambda,0)$ correspond to isosceles triangles whose base is 
-$2/\lambda$ and height $2$;
-\item Shapes $(\lambda,1)$ correspond to rectangles of aspect ratio $\lambda$;
-\item I guess that's it.
+$2/\lambda$ and height is $2$.
+\item In particular, a bit of trigonometry shows 
+$(\sqrt{3}/2, 0)$ produces to an equilateral triangle which 
+has an exact flow solution, which can be useful for validating convergence of 
+the finite element solvers.
+\item Shapes $(\lambda,1)$ correspond to rectangles of aspect ratio $\lambda$.
 \end{itemize}
 %
-A general challenge in shape optimization is a search space which 
-grows exponentially with the number of points used to define the 
-boundary. Here, a full parameter sweep is still feasible, 
-which I will show below.
+While the final goal of this paper is an unbiased search over a space of cross sections, 
+which is challenging class of problems because of an exponentially growing 
+search space in the degrees of freedom, these class of trapezoids are still 
+tractable for a full parameter sweep, which I investigate first.
 
 \section{Results}
 idk lol
