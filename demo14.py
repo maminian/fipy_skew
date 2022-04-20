@@ -17,7 +17,8 @@ import pandas
 
 import multiprocessing
 
-_RANDN_JITTER_MAG = 1e-6    # jittering all boundary points by this times a randn.
+_RANDN_JITTER_MAG = 0   # jittering all boundary points by this times a randn.
+NREPS = 1
 NPROC = 4
 np.random.seed(0)   # reproducibility
 
@@ -102,7 +103,7 @@ p = multiprocessing.Pool(NPROC)
 
 aratios = np.linspace(0,1,51)[1:]
 eccentricities = np.linspace(0,1,51)
-reps = np.arange(10)
+reps = np.arange(NREPS)
 
 #inputs = [ [i,'ellipse_%s'%str(i).zfill(4),generate_ellipse(a)] for i,a in enumerate(aratios)]
 #inputs = [ [i,'ellipse_%s'%str(i).zfill(4),generate_rectangle(a)] for i,a in enumerate(aratios)]
@@ -128,6 +129,6 @@ df = pandas.DataFrame(
 df['lambda'] = lams
 df['q'] = qs
 
-if False:
+if True:
     df.to_csv('trapezoid_asymptotics.csv', index=None)
 
