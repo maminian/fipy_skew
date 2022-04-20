@@ -18,6 +18,11 @@ data_file = '../cross_section_features/trapezoid_asymptotics_april19_1.csv'
 data_file_basename = os.path.basename(data_file)
 df = pandas.read_csv(data_file)
 
+df = df[ df.notna().all(axis=1) ]    # throw out freak accidents with NaN data.
+
+df = df[df['lambda']>=0.1]
+
+
 # Insertion of triangulation made beforehand.
 triang = tri.Triangulation(df['lambda'].values, df['q'].values)
 
@@ -38,7 +43,11 @@ ax.tricontourf(df['lambda'],df['q'],df['skew_g'], levels=[-0.1,0,0.1], vmin=-0.1
 
 ax.tricontourf(df['lambda'],df['q'],df['skew_l'], levels=[-0.1,0,0.1], vmin=-0.15,vmax=0.15, colors=color_l, alpha=0.5,zorder=20)
 
+
+##
 ax.grid(c='#ddd', lw=2)
+ax.set_xlim([0,1])
+ax.set_ylim([0,1])
 
 if HATCHME:
     #
@@ -60,7 +69,7 @@ if HATCHME:
 if True:
     fig.savefig('short_long_intersection.pdf',
     metadata = {
-        'Creator' : __file__ + " using data " + data_file_basename,
+        'Creator' : __file__ + " using data: " + data_file_basename,
         'Author': 'Manuchehr Aminian'
         }
     )
