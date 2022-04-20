@@ -17,7 +17,9 @@ import pandas
 
 import multiprocessing
 
+_RANDN_JITTER_MAG = 1e-6    # jittering all boundary points by this times a randn.
 NPROC = 4
+np.random.seed(0)   # reproducibility
 
 #######
 
@@ -78,6 +80,7 @@ def generate_trapezoid(lam,q):
         [0,-1],
         [1/lam,1]
         ])
+        pts += _RANDN_JITTER_MAG*np.random.randn(3,2)
     else:
         pts = np.array([
         [-1./lam,1],
@@ -85,6 +88,7 @@ def generate_trapezoid(lam,q):
         [q/lam,-1],
         [1/lam,1]
         ])
+        pts += _RANDN_JITTER_MAG*np.random.randn(4,2)
     return pts
 
 
@@ -98,6 +102,7 @@ p = multiprocessing.Pool(NPROC)
 
 aratios = np.linspace(0,1,51)[1:]
 eccentricities = np.linspace(0,1,51)
+reps = np.arange(10)
 
 #inputs = [ [i,'ellipse_%s'%str(i).zfill(4),generate_ellipse(a)] for i,a in enumerate(aratios)]
 #inputs = [ [i,'ellipse_%s'%str(i).zfill(4),generate_rectangle(a)] for i,a in enumerate(aratios)]
@@ -105,7 +110,8 @@ inputs = []
 import itertools
 lams = []
 qs = []
-for i,pair in enumerate(itertools.product( aratios, eccentricities )):
+for i,poople in enumerate(itertools.product( aratios, eccentricities, reps )):
+    pair = poople[:2]   #don't care about the last value
     inputs.append([i, 'trapezoid_%s'%str(i).zfill(8), generate_trapezoid(*pair)])
     lams.append(pair[0])
     qs.append(pair[1])
