@@ -18,15 +18,15 @@ from scipy import stats
 
 ANIMATE = False
 SAVEFRAMES = True
-FRAMESDIR = 'frames_demo08'
+FRAMESDIR = 'frames_demo08_st'
 if not os.path.exists(FRAMESDIR):
     os.mkdir(FRAMESDIR)
 
-N = 1000    # total particles
+N = 10000    # total particles
 Pe = 1e4    # Peclet
-dtmax = 1e-2
+dtmax = 1e-3
 #times = np.linspace(0,1,100)    # sample times
-times = 10.**np.linspace(-8,-1,21)
+times = 10.**np.linspace(-8,-1,41)
 times = np.concatenate([np.array([0]), times])
 
 fig_p,ax_p = pyplot.subplots(1,1, figsize=(8,6), constrained_layout=True)
@@ -43,10 +43,6 @@ TEMPLATE_OUTPUT = os.path.join(FRAMESDIR, 'frame_%s.png')
 #############################
 
 # prescribe boundary
-ths = np.pi + np.linspace(0,np.pi/2,20)
-bdry = [ [np.cos(th), np.sin(th)] for th in ths]
-bdry = bdry + [[0.,-0.2],[-0.2,-0.2],[-0.2,0]]
-bdry = np.array(bdry)
 
 if False:
     bdry = np.array([
@@ -65,7 +61,7 @@ elif False:
     th = np.linspace(0,2*np.pi,21)
     bdry = np.array([np.cos(th[:-1]), np.sin(th[:-1])]).T
 else:
-    lam = 0.2
+    lam = 0.8
     bdry = np.array([[-1/lam,-1],[1/lam,-1],[1/lam,1],[-1/lam,1]])
 
 #############################
@@ -145,7 +141,7 @@ for i in range(1,len(times_internal)):
     velos = fef.flow.value[active_cells]
 
     # Evolve equations.
-    X[:,0] += dt*Pe*velos + dW[:,0]
+    X[:,0] = X[:,0] + dt*Pe*velos + dW[:,0]
     YZ = X[:,1:] + dW[:,1:]
     
     # Did they end up somewhere within the mesh?
@@ -236,11 +232,11 @@ for i in range(1,len(times_internal)):
     
     if SAVEFRAMES and save_times[i]:
         print("\tSaved a frame, ")
-        print("\t mean: %.3e; std: %.3e; skew: %.3e"%(mean_x[jj],np.sqrt(var_x[jj]),sk_x[jj]))
         ax_p.cla()
 
 #        ax_p.scatter(X[:,1], X[:,2], c='k', s=4)
-        ax_p.scatter(X[:,1], X[:,2], c=mask_to_vis, s=4)
+#        ax_p.scatter(X[:,1], X[:,2], c=mask_to_vis, s=4)
+        ax_p.scatter(X[:,1], X[:,2], c=X[:,0], s=4)
         utils.vis_fe_mesh_2d(fef.flow, ax=ax_p, c='#999', linewidth=0.5)
         
         ax_p.set_xlim([bdry[:,0].min()-0.5, bdry[:,0].max()+0.5])
@@ -257,6 +253,7 @@ for i in range(1,len(times_internal)):
         # Calculate statistics
         # Statistics on X.
         mean_x[jj],var_x[jj],sk_x[jj],med_x[jj] = utils.compute_stats(X[:,0])
+        print("\t mean: %.3e; std: %.3e; skew: %.3e"%(mean_x[jj],np.sqrt(var_x[jj]),sk_x[jj]))
         jj += 1
     
 # end for loop
