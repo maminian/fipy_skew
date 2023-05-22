@@ -48,15 +48,6 @@ asymptotics = utils.Sk_Asymptotics(pts)
 _,_,_,Sk_asymp_short = asymptotics.compute_ST_asymptotics(t_short,Pe=Pe)
 _,_,Sk_asymp_long = asymptotics.compute_LT_asymptotics(t_long,Pe=Pe)
 
-####
-# big vis
-
-fig = pyplot.figure(constrained_layout=True)
-mosaic = '''
-ABC
-DDD
-'''
-ax = fig.subplot_mosaic(mosaic)
 
 ###
 
@@ -68,6 +59,18 @@ utils.vis_fe_2d(asymptotics.g2, antialiased=True, cmap=my_cm3, ax=ax["C"], cbar=
 #
 
 cellX,cellY = asymptotics.mesh.cellCenters.value
+
+
+####
+# big vis
+
+fig = pyplot.figure(constrained_layout=True)
+mosaic = '''
+ABC
+DDD
+'''
+ax = fig.subplot_mosaic(mosaic)
+
 ax["A"].tricontour(cellX, cellY, asymptotics.flow.value, 11, colors='k')
 ax["B"].tricontour(cellX, cellY, asymptotics.g1.value, 11, colors='k')
 ax["C"].tricontour(cellX, cellY, asymptotics.g2.value, 11, colors='k')
