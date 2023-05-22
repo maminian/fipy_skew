@@ -20,7 +20,7 @@ import colorcet
 import os
 
 SAVEFRAMES = False
-FRAMESDIR = 'frames'
+FRAMESDIR = 'frames_demo05'
 if not os.path.exists(FRAMESDIR):
     os.mkdir(FRAMESDIR)
 
