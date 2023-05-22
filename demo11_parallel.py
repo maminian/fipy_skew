@@ -20,7 +20,11 @@ import multiprocessing
 
 pyplot.style.use('dark_background')
 
-ANIMATE = False
+
+###############
+
+NPROCS = 8 # number of processors to parallelize the dynamics
+
 SAVEFRAMES = True
 FRAMESDIR = 'frames_demo11_p'
 if not os.path.exists(FRAMESDIR):
@@ -30,16 +34,13 @@ N = 1000    # total particles
 Pe = 1e4    # Peclet
 dtmax = 1e-2
 #times = np.linspace(0,1,100)    # sample times
-times = 10.**np.linspace(-8,1,81)
-times = np.concatenate([np.array([0]), times])
+#times = 10.**np.linspace(-8,1,81)
+#times = np.concatenate([np.array([0]), times])
+times = 10**-6*np.arange(10**4)
+
 
 fig_p,ax_p = pyplot.subplots(1,1, figsize=(8,6), constrained_layout=True)
 
-if ANIMATE:
-    # TODO: doesn't work
-    fig_p.show()
-    fig_p.canvas.draw()
-    pyplot.ion()
 
 TEMPLATE_OUTPUT = os.path.join(FRAMESDIR, 'frame_%s.png')
 ##
@@ -58,33 +59,68 @@ fef = fe_flow.fe_flow(bdry, cell_size=0.2, verbosity=1)
 exterior_faces = np.where( fef.mesh.exteriorFaces.value )[0]
 
 
+# TODO: don't do a shit job of this. Just sample randomly based on 
+# cell number and position randomly in barycentric coordinates.
+
+#
 # rejection (re)sampling method to get 
 # initial condition within domain.
-zr,yr = np.max(bdry, axis=0)
-zl,yl = np.min(bdry, axis=0)
+def sample_interior_uniform(fe_obj, N):
+    '''
+    Generates an (N,3) array of (x,y,z) coordinates 
+    where (y,z) are sampled on the interior of the given finite element mesh.
+    '''
+    bdry_face_indexes = fe_obj.mesh.exteriorFaces.value
+    bdry_vertex_indexes = fe_obj.mesh.faceVertexIDs.data[:,bdry_face_indexes]
+    bdry_vertex_indexes = np.unique( bdry_vertex_indexes.flatten() )
+    
+    bdry_xy = fe_obj.mesh.vertexCoords[:, bdry_vertex_indexes]
+    
+    
+    #bdry_xy = fe_obj
+    
+    zr,yr = bdry_xy.max(axis=1)
+    zl,yl = bdry_xy.min(axis=1)
 
-X0 = np.random.rand(N,3)
+    X0 = np.random.rand(N,3)
 
-X0[:,0] = np.zeros(N)
-X0[:,1] = zl + (zr-zl)*X0[:,1]
-X0[:,2] = yl + (yr-yl)*X0[:,2]
+    X0[:,0] = np.zeros(N)
+    X0[:,1] = zl + (zr-zl)*X0[:,1]
+    X0[:,2] = yl + (yr-yl)*X0[:,2]
 
-mask,active_cells = utils.locate_cell(X0[:,1:], fef.mesh, c_mats=fef.c_mats)
-bads = np.logical_not(mask)
-idx = np.where(bads)[0]
-while not all(mask):
-    _temp = np.random.rand(len(idx),3)
-    _temp[:,0] = 0
-    _temp[:,1] = zl + (zr-zl)*_temp[:,1]
-    _temp[:,2] = yl + (yr-yl)*_temp[:,2]
+    mask,active_cells = utils.locate_cell(X0[:,1:], fe_obj.mesh, c_mats=fe_obj.c_mats)
+    bads = np.logical_not(mask)
+    idx = np.where(bads)[0]
+    while not all(mask):
+        _temp = np.random.rand(len(idx),3)
+        _temp[:,0] = 0
+        _temp[:,1] = zl + (zr-zl)*_temp[:,1]
+        _temp[:,2] = yl + (yr-yl)*_temp[:,2]
 
-    submask,_ = utils.locate_cell(_temp[:,1:], fef.mesh, c_mats=fef.c_mats)
-    X0[idx[submask]] = _temp[submask]
-    mask[idx[submask]] = True
+        submask,_ = utils.locate_cell(_temp[:,1:], fe_obj.mesh, c_mats=fe_obj.c_mats)
+        X0[idx[submask]] = _temp[submask]
+        mask[idx[submask]] = True
+    return X0
+#
 
+X0 = sample_interior_uniform(fef, N)
 # full repeat identifying active cells.
-# TODO: do this within the rejection sampling loop
 mask,active_cells = utils.locate_cell(X0[:,1:], fef.mesh, c_mats=fef.c_mats)
+
+
+######################
+def stepforward(XYZ, fe_obj):
+    pass
+
+
+
+
+
+
+
+
+
+###########3
 
 # main loop
 #t = 0.
@@ -105,7 +141,7 @@ if SAVEFRAMES:
     
 #    ax_p.scatter(X[:,1], X[:,2], c='k', s=4)
     ax_p.scatter(X[:,1], X[:,2], c=X[:,0], s=4)
-    utils.vis_fe_mesh_2d(fef.flow, ax=ax_p, c='#999', linewidth=0.5)
+    utils.vis_fe_mesh_2d(fef.flow, ax=ax_p, c='#666', linewidth=0.5)
     
     ax_p.set_xlim([bdry[:,0].min()-0.5, bdry[:,0].max()+0.5])
     ax_p.set_xlim([bdry[:,1].min()-0.5, bdry[:,1].max()+0.5])
@@ -122,7 +158,7 @@ for i in range(1,len(times_internal)):
     print("Start of iter %i, time %.3e"%(i,times_internal[i]))
 
 
-    # get params
+    # step forward
     dt = times_internal[i] - times_internal[i-1]
     dW = np.sqrt(2*dt)*np.random.randn(N,3)
 
@@ -217,7 +253,11 @@ for i in range(1,len(times_internal)):
     # TODO: do we need to do a complete repeat of this???
 #    mask,active_cells = utils.locate_cell(X[:,1:], fef.mesh, c_mats=fef.c_mats)
     
-    
+    if save_times[i]:
+        # Calculate statistics
+        # Statistics on X.
+        mean_x[jj],var_x[jj],sk_x[jj],med_x[jj] = utils.compute_stats(X[:,0])
+
     if SAVEFRAMES and save_times[i]:
         print("\tSaved a frame, ")
         print("\t mean: %.3e; std: %.3e; skew: %.3e"%(mean_x[jj],np.sqrt(var_x[jj]),sk_x[jj]))
@@ -233,14 +273,8 @@ for i in range(1,len(times_internal)):
         
         ax_p.text( 0.05,0.95,r"$t=%.4e$"%times_internal[i], transform=ax_p.transAxes, ha='left', va='top')
         fig_p.savefig(TEMPLATE_OUTPUT % str(jj).zfill(5))
-    if ANIMATE and save_times[i]:
-        # TODO: doesn't work
-        fig_p.canvas.draw()
     
     if save_times[i]:
-        # Calculate statistics
-        # Statistics on X.
-        mean_x[jj],var_x[jj],sk_x[jj],med_x[jj] = utils.compute_stats(X[:,0])
         jj += 1
     
 # end for loop
