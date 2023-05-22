@@ -50,8 +50,10 @@ def pad_times2(times, dtmax):
 #    save_time = [True]
     for i in range(1,len(times)):
         t_i_temp = np.arange(times[i-1], times[i], dtmax)
-        if not np.isclose(t_i_temp[-1], times[i]):
+        if not np.isclose(t_i_temp[-1], times[i], atol=1e-10): # not great that this is manually coded
+        
             t_i_temp = np.concatenate( [t_i_temp, [times[i]]]  )
+            
         times_internal.append(t_i_temp)
 #        save_time.append(True)
     save_time = np.ones(len(times_internal), dtype=bool)

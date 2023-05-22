@@ -15,11 +15,17 @@ import utils
 
 #import cmocean  # colormap
 
-import colorcet
+
 
 import os
 
-SAVEFRAMES = False
+try:
+    import cmocean
+    tripalette = cmocean.cm.ice
+except:
+    tripalette = pyplot.cm.inferno
+
+SAVEFRAMES = True
 FRAMESDIR = 'frames_demo05'
 if not os.path.exists(FRAMESDIR):
     os.mkdir(FRAMESDIR)
@@ -32,19 +38,19 @@ TEMPLATE_OUTPUT = os.path.join(FRAMESDIR, 'reflections_%s.png')
 #bdry = np.array([ [np.cos(th), np.sin(th)] for th in 2*np.pi/s*np.arange(s) ])
 ths = np.pi + np.linspace(0,np.pi/2,20)
 bdry = [ [np.cos(th), np.sin(th)] for th in ths]
-bdry = bdry + [[0.,-0.2],[-0.2,-0.2],[-0.2,0]]
+bdry = bdry + [[0.,-0.4],[-0.4,-0.4],[-0.4,0]]
 bdry = np.array(bdry)
 
-fef = fe_flow.fe_flow(bdry, cell_size=0.1, verbosity=1)
+fef = fe_flow.fe_flow(bdry, cell_size=0.2, verbosity=1)
 
-fig,ax = utils.vis_fe_2d(fef.flow, cbar=False, cmap=colorcet.cm.bmw)
+fig,ax = utils.vis_fe_2d(fef.flow, cbar=False, cmap=tripalette)
 fig.set_figwidth(8)
 fig.set_figheight(8)
 
 pyplot.pause(0.1)
 
 exterior_faces = np.where( fef.mesh.exteriorFaces.value )[0]
-edgecolors = np.tile([0.7,0.7,0.7,1],(fef.mesh.faceCenters.value.shape[1],1))
+edgecolors = np.tile([0.5,0.5,0.5,1],(fef.mesh.faceCenters.value.shape[1],1))
 #edgecolors[exterior_faces] = [0,0,0,1]
 # pyplot ordering of faces isn't the same as gmesh.
 
@@ -70,7 +76,7 @@ pyplot.ion()
 
 
 
-x0o = np.array([-0.5,-0.1])
+x0o = np.array([-0.6,-0.2])
 x1o = np.array([-6.,5.])
 
 x0,x1 = np.array(x0o), np.array(x1o)
@@ -162,10 +168,10 @@ while t<1:
     
     if hasattr(txt,'remove'):
         txt.remove()
-    txt = ax.text(x1i[0],x1i[1], r'$t=%.3f$'%t, c='w', fontsize=12)
+    txt = ax.text(x1i[0]+0.02,x1i[1]-0.02, r'$t=%.3f$'%t, c='w', fontsize=12, bbox={'facecolor': 'k', 'edgecolor':'w'})
     
     if SAVEFRAMES:
-        fig.savefig(TEMPLATE_OUTPUT%str(jj).zfill(4), dpi=120, bbox_inches='tight')
+        fig.savefig(TEMPLATE_OUTPUT%str(jj).zfill(4), dpi=120)
     pyplot.pause(0.1)
     jj += 1
 #
