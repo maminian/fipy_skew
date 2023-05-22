@@ -307,6 +307,42 @@ def vis_fe_mesh_2d(fipy_cell_var, ax=None, **kwargs):
     #
 #
 
+def vis_fe_mesh_boundary(fe_obj, color=None, ax=None, **kwargs):
+    '''
+    draws the boundary of the fipy object with the given colors.
+    kwargs passed to ax.plot()
+    
+    Currently only a single color is supported. May include options 
+    for masking in the future.
+    
+    kwargs passed to pyplot.triplot directly.
+    '''
+    import numpy as np
+    from matplotlib import tri,pyplot,collections
+    
+    if color is None:
+        color = pyplot.cm.tab10(0)
+    
+    if ax is None:
+        fig,ax = pyplot.subplots(1,1)
+        flag_ax=True
+    else:
+        flag_ax=False
+    
+    idx_pairs = fe_obj.mesh.faceVertexIDs[:, fe_obj.mesh.exteriorFaces.value].data
+    line_coords = fe_obj.mesh.vertexCoords[:, idx_pairs]
+    line_coords = line_coords.transpose((2,1,0))
+    linecoll = collections.LineCollection(line_coords, color=color)
+    
+    ax.add_collection(linecoll)
+    # the end
+    if flag_ax:
+        return fig,ax
+    else:
+        return
+    #
+#
+
 def locate_cell(points, gmesh, **kwargs):
     '''
     Given a gmesh object (collection of vertices, faces, cells),
