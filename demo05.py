@@ -138,8 +138,8 @@ while t<1:
 
     #pathcolor = colorcet.cm.colorwheel(((jj*8)%256)/256.)
     pathcolor = pyplot.cm.twilight(((jj*8)%256)/256.)
-    ax.plot([x0[0], x1i[0]], [x0[1],x1i[1]], c=pathcolor, marker='.', markersize=8, linewidth=2)
-#    ax.text(x1i[0],x1i[1], r't=%.3f'%t, fontsize=11, ha='left', va='top')
+    ax.plot([x0[0], x1i[0]], [x0[1],x1i[1]], c='#f00', marker='.', markersize=8, linewidth=2, zorder=100)
+
     
     print(x0,x1i,x1,t)
     
@@ -169,6 +169,8 @@ while t<1:
     if hasattr(txt,'remove'):
         txt.remove()
     txt = ax.text(x1i[0]+0.02,x1i[1]-0.02, r'$t=%.3f$'%t, c='w', fontsize=12, bbox={'facecolor': 'k', 'edgecolor':'w'})
+    
+    utils.vis_fe_mesh_boundary(fef, color='#faa', ax=ax, lw=2, ls='--')
     
     if SAVEFRAMES:
         fig.savefig(TEMPLATE_OUTPUT%str(jj).zfill(4), dpi=120)

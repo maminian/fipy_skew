@@ -364,7 +364,7 @@ def vis_fe_mesh_boundary(fe_obj, color=None, ax=None, **kwargs):
     idx_pairs = fe_obj.mesh.faceVertexIDs[:, fe_obj.mesh.exteriorFaces.value].data
     line_coords = fe_obj.mesh.vertexCoords[:, idx_pairs]
     line_coords = line_coords.transpose((2,1,0))
-    linecoll = collections.LineCollection(line_coords, color=color)
+    linecoll = collections.LineCollection(line_coords, color=color, **kwargs)
     
     ax.add_collection(linecoll)
     # the end
