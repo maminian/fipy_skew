@@ -29,6 +29,36 @@ def pad_times(times, dtmax):
     return np.array(times_internal), np.array(save_time)
 #
 
+def pad_times2(times, dtmax):
+    '''
+    Given 1d array times and dtmax, constructs two new 
+    arrays which treat "times" as checkpoints with internal 
+    timesteps which respect the maximum timestep.
+    
+    The difference is in the output.
+    
+    Inputs:
+        times : 1d array
+        dtmax : positive scalar
+    Outputs:
+        times_internal : list of 1D arrays; times_internal[0] and [-1] are 
+            times[i] and times[i+1].
+        save_time : currently an array of all Trues, for compatibility.
+    '''
+    t=times[0]
+    times_internal = []
+#    save_time = [True]
+    for i in range(1,len(times)):
+        t_i_temp = np.arange(times[i-1], times[i], dtmax)
+        if not np.isclose(t_i_temp[-1], times[i]):
+            t_i_temp = np.concatenate( [t_i_temp, [times[i]]]  )
+        times_internal.append(t_i_temp)
+#        save_time.append(True)
+    save_time = np.ones(len(times_internal), dtype=bool)
+    
+    return times_internal, save_time
+#
+
 def smooth_boundary(arr_1d, nsteps=10, gamma=0.0):
     '''
     does a few steps of the smoothing procedure x[i] = (1-gamma)x[i] + gamma(x[i-1]+x[i+1])/2

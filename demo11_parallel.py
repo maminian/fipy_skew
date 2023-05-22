@@ -23,14 +23,14 @@ pyplot.style.use('dark_background')
 
 ###############
 
-NPROCS = 8 # number of processors to parallelize the dynamics
+NPROCS = 10 # number of processors to parallelize the dynamics
 
-SAVEFRAMES = True
+SAVEFRAMES = False
 FRAMESDIR = 'frames_demo11_p'
 if not os.path.exists(FRAMESDIR):
     os.mkdir(FRAMESDIR)
 
-N = 1000    # total particles
+N = 10000    # total particles
 Pe = 1e4    # Peclet
 dtmax = 1e-2
 #times = np.linspace(0,1,100)    # sample times
@@ -110,8 +110,11 @@ def stepforward(inputs):
 
     dts = np.diff(times)
     _mask, _active_cells = utils.locate_cell(XYZ[:,1:], fe_obj.mesh, c_mats=fe_obj.c_mats)
+
+    _N = np.shape(XYZ)[0]
+    
     for _i,dt in enumerate(dts):
-        dW = np.sqrt(2*dt)*np.random.normal(0, 1, (N,3))
+        dW = np.sqrt(2*dt)*np.random.normal(0, 1, (_N,3))
         velos = fe_obj.flow.value[_active_cells]
         XYZ[:,0] = XYZ[:,0] + dt*Pe*velos + dW[:,0]
         
@@ -241,12 +244,17 @@ X0 = sample_interior_uniform(fef, N)
 # full repeat identifying active cells.
 mask,active_cells = utils.locate_cell(X0[:,1:], fef.mesh, c_mats=fef.c_mats)
 
+times_internal, save_times = utils.pad_times2(times, dtmax)
 
+_pool = multiprocessing.Pool(NPROCS)
 
+######### 
+# Setting up partitioning for parallel timestepping
+cutoffs = np.linspace(0, X0.shape[0], NPROCS+1)
+cutoffs = np.array(cutoffs, dtype=int)
+subsets = [np.arange(cutoffs[i],cutoffs[i+1]) for i in range(len(cutoffs)-1)]
 
-###########3
-
-times_internal, save_times = utils.pad_times(times, dtmax)
+###########
 
 # main loop
 #t = 0.
@@ -263,16 +271,18 @@ med_x = np.zeros(np.shape(times))
 mean_x[jj],var_x[jj],sk_x[jj],med_x[jj] = utils.compute_stats(X[:,0])
 
 if SAVEFRAMES:
-    plot_state(ax_p, fef, times_internal[0])
+#    plot_state(ax_p, fef, times_internal[0])
+    plot_state(ax_p, fef, times[0])
     fig_p.savefig(TEMPLATE_OUTPUT % str(jj).zfill(5))
     jj+=1
 
 
-for i in range(1,len(times_internal)):
-    print("Start of iter %i, time %.3e"%(i,times_internal[i]))
+for i in range(len(times_internal)):
+    print("Start of iter %i, time %.3e -- %.3e"%(i, times_internal[i][0], times_internal[i][-1]))
 
-
-    X = stepforward( [X, fef, [times_internal[i-1], times_internal[i]] ] )
+    inputs = [[np.array(X[s,:]), fef, times_internal[i]] for s in subsets]
+    Xlist = _pool.map(stepforward, inputs)
+    X = np.vstack(Xlist)
     
     # TODO: do we need to do a complete repeat of this???
 #    mask,active_cells = utils.locate_cell(X[:,1:], fef.mesh, c_mats=fef.c_mats)
@@ -281,12 +291,13 @@ for i in range(1,len(times_internal)):
         # Calculate statistics
         # Statistics on X.
         mean_x[jj],var_x[jj],sk_x[jj],med_x[jj] = utils.compute_stats(X[:,0])
-
+        print("\t mean: %.3e; std: %.3e; skew: %.3e"%(mean_x[jj],np.sqrt(var_x[jj]),sk_x[jj]))
+        
         if SAVEFRAMES:
-            print("\tSaved a frame, ")
-            print("\t mean: %.3e; std: %.3e; skew: %.3e"%(mean_x[jj],np.sqrt(var_x[jj]),sk_x[jj]))
+            print("\tSaved frame %i"%jj)
+            
 
-            plot_state(ax_p, fef, times_internal[i])
+            plot_state(ax_p, fef, times[i])
 
             fig_p.savefig(TEMPLATE_OUTPUT % str(jj).zfill(5))
         
