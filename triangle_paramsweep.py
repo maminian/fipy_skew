@@ -16,10 +16,11 @@ import triangles
 import pandas
 
 import multiprocessing
+import time
 
-_JITTER_MAG = 0.01   # jittering all boundary points by this times a randn.
-NREPS = 5
-NPROC = 8
+_JITTER_MAG = 0.03   # jittering all boundary points by this times a randn.
+NREPS = 20
+NPROC = 12
 np.random.seed(1234)   # reproducibility
 
 #######
@@ -27,9 +28,9 @@ np.random.seed(1234)   # reproducibility
 def process_domain(inputs):
     i,name,lam,e,pts = inputs
     
-    # been a long time - I think this is just 1/50 plus numbers to avoid 
-    # odd floating point issues.
-    cell_size_rel=0.010304
+    # been a long time - I think this is just arbitrary, and trying to avoid 
+    # floating point issues.
+    cell_size_rel=0.01030411706
         
     # back to regularly scheduled programming
     try:
@@ -45,6 +46,7 @@ def process_domain(inputs):
         
         outputs = [i,name] + [np.nan for _ in range(7)] # number of outputs is 7 as of Apr 19 2022
     print(i, name, lam, e)
+    
     return outputs
 ##################
 
@@ -100,6 +102,7 @@ for i,poople in enumerate(itertools.product( aratios, eccentricities, reps )):
     inputs.append([i, 'triangle_%s'%str(i).zfill(8), pair[0], pair[1], generate_triangle(*pair)])
     lams.append(pair[0])
     es.append(pair[1])
+
 outputs = p.map(process_domain, inputs)
 
 ###
@@ -113,6 +116,6 @@ df = pandas.DataFrame(
 df['lambda'] = lams
 df['e'] = es
 
-if False:
+if True:
     df.to_csv('triangle_asymptotics.csv', index=None)
 

@@ -19,8 +19,8 @@ import multiprocessing
 
 _RANDN_JITTER_MAG = 0   # jittering all boundary points by this times a randn.
 NREPS = 1
-NPROC = 4
-np.random.seed(0)   # reproducibility
+NPROC = 12
+np.random.seed(1234)   # reproducibility
 
 #######
 
@@ -129,6 +129,6 @@ df = pandas.DataFrame(
 df['lambda'] = lams
 df['q'] = qs
 
-if True:
+if False:
     df.to_csv('trapezoid_asymptotics.csv', index=None)
 
