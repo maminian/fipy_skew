@@ -51,6 +51,16 @@ _,_,Sk_asymp_long = asymptotics.compute_LT_asymptotics(t_long,Pe=Pe)
 
 ###
 
+
+fig = pyplot.figure(constrained_layout=True)
+mosaic = '''
+ABC
+DDD
+'''
+ax = fig.subplot_mosaic(mosaic)
+
+###
+
 utils.vis_fe_2d(asymptotics.flow, antialiased=True, cmap=my_cm, ax=ax["A"], cbar=False)
 utils.vis_fe_2d(asymptotics.g1, antialiased=True, cmap=my_cm2, ax=ax["B"], cbar=False, cstyle='divergent')
 utils.vis_fe_2d(asymptotics.g2, antialiased=True, cmap=my_cm3, ax=ax["C"], cbar=False, cstyle='divergent')
@@ -63,13 +73,6 @@ cellX,cellY = asymptotics.mesh.cellCenters.value
 
 ####
 # big vis
-
-fig = pyplot.figure(constrained_layout=True)
-mosaic = '''
-ABC
-DDD
-'''
-ax = fig.subplot_mosaic(mosaic)
 
 ax["A"].tricontour(cellX, cellY, asymptotics.flow.value, 11, colors='k')
 ax["B"].tricontour(cellX, cellY, asymptotics.g1.value, 11, colors='k')
