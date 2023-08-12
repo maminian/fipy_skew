@@ -18,12 +18,16 @@ import gen_mesh
 import utils
 
 
-
-import cmocean  # just for colormap
-import colorcet
-my_cm = colorcet.cm.kbc
-my_cm2 = colorcet.cm.gwv
-my_cm3 = colorcet.cm.cwr
+try:
+    import cmocean  # just for colormap
+    import colorcet
+    my_cm = colorcet.cm.kbc
+    my_cm2 = colorcet.cm.gwv
+    my_cm3 = colorcet.cm.cwr
+except:
+    my_cm = pyplot.cm.viridis
+    my_cm2 = pyplot.cm.plasma
+    my_cm3 = pyplot.cm.cividis
 
 
 ##
