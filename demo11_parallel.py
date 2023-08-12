@@ -26,16 +26,16 @@ pyplot.style.use('dark_background')
 NPROCS = 12 # number of processors to parallelize the dynamics
 
 SAVEFRAMES = True
-FRAMESDIR = 'frames_demo11_p'
+FRAMESDIR = 'frames_demo11_p_aug11'
 if not os.path.exists(FRAMESDIR):
     os.mkdir(FRAMESDIR)
 
-N = 1000    # total particles
+N = 10000    # total particles
 Pe = 1e4    # Peclet
 dtmax = 1e-3
 #times = np.linspace(0,1,100)    # sample times
 times = 10.**np.linspace(-8,0,9)
-times = np.concatenate([np.array([0]), times])
+times = np.concatenate([np.array([0]), times, np.arange(1.5,10.1,0.5)])
 #times = np.arange(0,1,1e-2)
 #times = [0, 1e-5, 1e-4, 1e-3, 1e-2, 1e-1]
 
@@ -191,8 +191,8 @@ def stepforward(inputs):
             # end while for single particle out-of-bounds.
 
             # 4. Done!
-            #YZ[ii] = x1
-            XYZ[ii,1:] = YZ
+            YZ[ii] = x1
+            
     #        _mask,_ = utils.locate_cell(x1, fe_obj.mesh, c_mats = fe_obj.c_mats)
     #        if not mask:
     #            print('what the fuck', ii, x1)
@@ -201,7 +201,7 @@ def stepforward(inputs):
         # end for loop of out-of-bounds particles.
         
         # update XYZ
-#        XYZ[:,1:] = YZ
+        XYZ[:,1:] = YZ
         
         # update active cells for next velocity
         #_,_active_cells = utils.locate_cell(X[:,1:], fef.mesh, c_mats=fef.c_mats)
