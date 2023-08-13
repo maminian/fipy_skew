@@ -11,6 +11,7 @@ from matplotlib import pyplot
 import os
 
 import utils
+import domains
 
 import pandas
 
@@ -57,42 +58,6 @@ def process_domain(inputs):
 ##################
 
 
-def generate_ellipse(lam):
-    th = np.linspace(0,2*np.pi, 100)
-    x = 1/lam*np.cos(th[:-1])
-    y = np.sin(th[:-1])
-    pts = np.vstack([x,y]).T
-    return pts
-
-def generate_rectangle(lam):
-    pts = np.array([
-    [-1./lam, -1],
-    [1./lam, -1],
-    [1./lam, 1],
-    [-1./lam, 1]
-    ])
-    return pts
-
-def generate_trapezoid(lam,q):
-    if q<1e-4:
-        # assume we have q==0 and avoid duplicate point on boundary.
-        pts = np.array([
-        [-1./lam,1],
-        [0,-1],
-        [1/lam,1]
-        ])
-        pts += _RANDN_JITTER_MAG*np.random.randn(3,2)
-    else:
-        pts = np.array([
-        [-1./lam,1],
-        [-q/lam,-1],
-        [q/lam,-1],
-        [1/lam,1]
-        ])
-        pts += _RANDN_JITTER_MAG*np.random.randn(4,2)
-    return pts
-
-
 #############
 
 # **must** Initialize pool after defining functions! 
@@ -113,7 +78,7 @@ lams = []
 qs = []
 for i,poople in enumerate(itertools.product( aratios, eccentricities, reps )):
     pair = poople[:2]   #don't care about the last value
-    inputs.append([i, 'trapezoid_%s'%str(i).zfill(8), generate_trapezoid(*pair)])
+    inputs.append([i, 'trapezoid_%s'%str(i).zfill(8), domains.generate_trapezoid(*pair)])
     lams.append(pair[0])
     qs.append(pair[1])
 outputs = p.map(process_domain, inputs)

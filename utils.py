@@ -277,7 +277,7 @@ def vis_fe_2d(fipy_cell_var, cbar=True, **kwargs):
     )
 
     if cbar:
-        fig.colorbar(triobj)
+        fig.colorbar(triobj, ax=ax)
     #
 
     # the end
@@ -783,3 +783,45 @@ class Sk_Asymptotics:
             6. Long time skewness; coefficient for skewness decay to zero of the form LG*t**-1/2
         '''
         return ( self.area, self.lz, self.ly, self.util1_avg, self.ug1_avg, self.SG, self.SLONG )
+        
+    def visualize(self, Pe=1e4):
+        '''
+        mesh | flow | skew
+             | g1   | g2  
+        '''
+        from matplotlib import pyplot as plt
+        
+        fig,ax = plt.subplot_mosaic('''
+        MMUP
+        MM12
+        ''',
+        figsize=(12,6),
+        constrained_layout=True
+        )
+        
+        vis_fe_mesh_2d(self.flow, ax['M'], color='#666', linewidth=0.5)
+        vis_fe_mesh_boundary(self.flow, color='r', ax=ax['M'], linewidth=2)
+        
+        vis_fe_2d(self.flow, ax=ax['U'], cmap=plt.cm.viridis)
+        vis_fe_2d(self.g1, ax=ax['1'], cstyle='divergent', cmap=plt.cm.cividis)
+        vis_fe_2d(self.g2, ax=ax['2'], cstyle='divergent', cmap=plt.cm.PRGn)
+        
+        cellX,cellY = self.mesh.cellCenters.value
+        ax["1"].tricontour(cellX, cellY, self.g1.value, 11, colors='r')
+        ax["2"].tricontour(cellX, cellY, self.g2.value, 11, colors='r')
+        
+        ts = 10**np.arange(-10, -5+0.2, 0.2)
+        tl = 10**np.arange(-1,  2.1,    0.2)
+        
+        _,_,_,skew_s = self.compute_ST_asymptotics(ts,Pe=Pe)
+        _,_,skew_l = self.compute_LT_asymptotics(tl,Pe=Pe)
+        
+        ax['P'].plot(ts, skew_s, ls='dashed', c='#369')
+        ax['P'].plot(tl, skew_l, ls='dashed', c='#393')
+        ax['P'].set(xscale='log', xlabel=r'$t$', ylabel=r'Sk')
+        
+        derp = 1.5*max(abs(skew_s))
+        ax['P'].set(ylim=[-derp,derp])
+        
+        return fig,ax
+
