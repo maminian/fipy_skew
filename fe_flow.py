@@ -188,7 +188,7 @@ class fe_flow:
         from scipy import spatial
         import numpy as np
         D = spatial.distance_matrix(self.mesh.cellCenters.value.T, self.mesh.cellCenters.value.T)
-        nbrs = np.zeros(D.shape, dtype=np.int)
+        nbrs = np.zeros(D.shape, dtype=int)
 
         for j,row in enumerate(D):
             nbrs[j] = np.argsort(row)
