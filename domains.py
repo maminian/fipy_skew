@@ -45,7 +45,7 @@ def generate_rectangle(lam):
     ])
     return pts
 
-def generate_trapezoid(lam,q):
+def generate_trapezoid(lam,q, _RANDN_JITTER_MAG=1e-3):
     if q<1e-4:
         # assume we have q==0 and avoid duplicate point on boundary.
         pts = np.array([
